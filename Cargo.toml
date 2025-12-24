@@ -1,0 +1,46 @@
+[workspace]
+resolver = "2"
+members = [
+    "drm-core",
+    "drm-exchange-polymarket",
+    "drm-examples",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/gtg7784/dr-manhattan-rust"
+authors = ["gtg7784"]
+
+[workspace.dependencies]
+# Async runtime
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "sync"] }
+async-trait = "0.1"
+futures = "0.3"
+
+# HTTP & WebSocket
+reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
+tokio-tungstenite = { version = "0.24", features = ["rustls-tls-native-roots"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Error handling
+thiserror = "2"
+anyhow = "1"
+
+# Ethereum
+ethers = { version = "2", default-features = false, features = ["ws", "rustls"] }
+
+# Time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Internal crates
+drm-core = { path = "drm-core" }
+drm-exchange-polymarket = { path = "drm-exchange-polymarket" }

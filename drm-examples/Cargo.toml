@@ -1,0 +1,19 @@
+[package]
+name = "drm-examples"
+description = "Examples for dr-manhattan prediction market SDK"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+drm-core = { workspace = true }
+drm-exchange-polymarket = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+anyhow = { workspace = true }
+
+[[bin]]
+name = "list-markets"
+path = "src/bin/list_markets.rs"

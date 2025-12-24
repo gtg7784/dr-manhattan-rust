@@ -1,0 +1,14 @@
+/target
+**/*.rs.bk
+Cargo.lock
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.DS_Store
+*.log
+.idea/
+.vscode/
+*.swp
+*.swo
