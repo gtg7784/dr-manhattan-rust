@@ -47,6 +47,9 @@ pub enum ExchangeError {
     #[error("invalid order: {0}")]
     InvalidOrder(String),
 
+    #[error("order rejected: {0}")]
+    OrderRejected(String),
+
     #[error("insufficient funds: {0}")]
     InsufficientFunds(String),
 
@@ -60,7 +63,7 @@ pub enum ExchangeError {
     Api(String),
 }
 
-#[derive(Debug, Error)]
+#[derive(Debug, Clone, Error)]
 pub enum WebSocketError {
     #[error("connection error: {0}")]
     Connection(String),
