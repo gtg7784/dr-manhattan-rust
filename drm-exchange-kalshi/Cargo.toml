@@ -1,0 +1,30 @@
+[package]
+name = "drm-exchange-kalshi"
+description = "Kalshi exchange implementation for dr-manhattan"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+keywords = ["prediction-market", "trading", "kalshi", "api"]
+categories = ["api-bindings", "finance"]
+
+[dependencies]
+drm-core = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = "1"
+thiserror = { workspace = true }
+chrono = { workspace = true }
+tracing = { workspace = true }
+
+# RSA-PSS signing
+rsa = "0.9"
+sha2 = "0.10"
+base64 = "0.22"
+pkcs8 = { version = "0.10", features = ["pem"] }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }

@@ -5,6 +5,7 @@ members = [
     "drm-exchange-polymarket",
     "drm-exchange-opinion",
     "drm-exchange-limitless",
+    "drm-exchange-kalshi",
     "drm-examples",
 ]
 
