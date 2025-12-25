@@ -45,6 +45,33 @@ impl Default for StrategyConfig {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct MarketMakingConfig {
+    pub max_exposure: f64,
+    pub check_interval_ms: u64,
+    pub min_spread_bps: u32,
+    pub max_order_size: f64,
+    pub verbose: bool,
+}
+
+impl Default for MarketMakingConfig {
+    fn default() -> Self {
+        Self {
+            max_exposure: 1000.0,
+            check_interval_ms: 2000,
+            min_spread_bps: 50,
+            max_order_size: 100.0,
+            verbose: false,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct AccountState {
+    pub balance: HashMap<String, f64>,
+    pub positions: Vec<Position>,
+}
+
 #[async_trait]
 pub trait Strategy: Send + Sync {
     fn name(&self) -> &str;
@@ -256,6 +283,56 @@ impl<E: Exchange + 'static> BaseStrategy<E> {
             let _ = self.event_tx.send(StrategyEvent::Resumed);
             self.log("Strategy resumed");
         }
+    }
+
+    pub async fn get_account_state(&self) -> Result<AccountState, DrmError> {
+        let balance = self.exchange.fetch_balance().await?;
+        let positions = self.exchange.fetch_positions(Some(&self.market_id)).await?;
+
+        if self.config.verbose {
+            let usdc_balance = balance.get("USDC").copied().unwrap_or(0.0);
+            self.log(&format!("USDC Balance: ${:.2}", usdc_balance));
+            self.log(&format!("Positions: {} open", positions.len()));
+            for pos in &positions {
+                self.log(&format!(
+                    "  {}: {} shares @ avg ${:.4}",
+                    pos.outcome, pos.size, pos.average_price
+                ));
+            }
+        }
+
+        Ok(AccountState { balance, positions })
+    }
+
+    pub fn calculate_order_size(&self, price: f64, max_exposure: f64) -> f64 {
+        let market = match &self.market {
+            Some(m) => m,
+            None => return 5.0,
+        };
+
+        let base_size = if market.liquidity > 0.0 {
+            (20.0_f64).min(market.liquidity * 0.01)
+        } else {
+            5.0
+        };
+
+        let position_cost = base_size * price;
+        if position_cost > max_exposure {
+            base_size * (max_exposure / position_cost)
+        } else {
+            base_size
+        }
+    }
+
+    pub fn calculate_spread_prices(
+        &self,
+        mid_price: f64,
+        spread_bps: u32,
+    ) -> (f64, f64) {
+        let half_spread = mid_price * (spread_bps as f64 / 10000.0) / 2.0;
+        let bid = mid_price - half_spread;
+        let ask = mid_price + half_spread;
+        (bid, ask)
     }
 }
 
