@@ -19,6 +19,12 @@ thiserror = { workspace = true }
 chrono = { workspace = true }
 tracing = { workspace = true }
 ethers = { workspace = true }
+tokio-stream = { version = "0.1", features = ["sync"] }
+hmac = "0.12"
+sha2 = "0.10"
+base64 = "0.21"
+hex = "0.4"
+regex = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util"] }

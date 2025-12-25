@@ -46,6 +46,16 @@ impl PolymarketConfig {
         self
     }
 
+    pub fn with_gamma_url(mut self, url: impl Into<String>) -> Self {
+        self.gamma_url = url.into();
+        self
+    }
+
+    pub fn with_clob_url(mut self, url: impl Into<String>) -> Self {
+        self.clob_url = url.into();
+        self
+    }
+
     pub fn is_authenticated(&self) -> bool {
         self.private_key.is_some()
     }
