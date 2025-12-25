@@ -30,6 +30,16 @@ impl LimitlessConfig {
         Self::default()
     }
 
+    pub fn with_api_url(mut self, url: impl Into<String>) -> Self {
+        self.api_url = url.into();
+        self
+    }
+
+    pub fn with_ws_url(mut self, url: impl Into<String>) -> Self {
+        self.ws_url = url.into();
+        self
+    }
+
     pub fn with_private_key(mut self, key: impl Into<String>) -> Self {
         self.private_key = Some(key.into());
         self

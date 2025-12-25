@@ -31,6 +31,11 @@ impl OpinionConfig {
         Self::default()
     }
 
+    pub fn with_api_url(mut self, url: impl Into<String>) -> Self {
+        self.api_url = url.into();
+        self
+    }
+
     pub fn with_api_key(mut self, key: impl Into<String>) -> Self {
         self.api_key = Some(key.into());
         self

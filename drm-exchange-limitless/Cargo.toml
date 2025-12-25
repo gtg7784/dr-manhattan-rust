@@ -21,3 +21,6 @@ futures = { workspace = true }
 rust_socketio = { workspace = true }
 tokio-stream = { workspace = true }
 hex = "0.4"
+
+[dev-dependencies]
+wiremock = "0.6"
