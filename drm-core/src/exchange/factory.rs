@@ -133,10 +133,7 @@ mod tests {
             Ok(ExchangeId::Polymarket)
         );
         assert_eq!(ExchangeId::from_str("opinion"), Ok(ExchangeId::Opinion));
-        assert_eq!(
-            ExchangeId::from_str("limitless"),
-            Ok(ExchangeId::Limitless)
-        );
+        assert_eq!(ExchangeId::from_str("limitless"), Ok(ExchangeId::Limitless));
         assert_eq!(ExchangeId::from_str("unknown"), Err(()));
     }
 
@@ -151,7 +148,8 @@ mod tests {
         let valid_key = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
         assert!(validate_private_key(valid_key).is_ok());
 
-        let valid_key_no_prefix = "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+        let valid_key_no_prefix =
+            "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
         assert!(validate_private_key(valid_key_no_prefix).is_ok());
     }
 

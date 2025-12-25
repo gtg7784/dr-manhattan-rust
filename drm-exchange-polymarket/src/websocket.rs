@@ -6,7 +6,9 @@ use tokio::sync::{broadcast, Mutex, RwLock};
 use tokio::time::{interval, Duration};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 
-use drm_core::{Orderbook, OrderBookWebSocket, OrderbookStream, PriceLevel, WebSocketError, WebSocketState};
+use drm_core::{
+    OrderBookWebSocket, Orderbook, OrderbookStream, PriceLevel, WebSocketError, WebSocketState,
+};
 
 const WS_URL: &str = "wss://ws-subscriptions-clob.polymarket.com/ws/market";
 const PING_INTERVAL_SECS: u64 = 20;
@@ -241,8 +243,8 @@ impl PolymarketWebSocket {
                 assets_ids: asset_ids.clone(),
                 msg_type: "market".into(),
             };
-            let json = serde_json::to_string(&msg)
-                .map_err(|e| WebSocketError::Protocol(e.to_string()))?;
+            let json =
+                serde_json::to_string(&msg).map_err(|e| WebSocketError::Protocol(e.to_string()))?;
             self.send_message(&json).await?;
         }
         Ok(())
@@ -479,8 +481,8 @@ impl OrderBookWebSocket for PolymarketWebSocket {
                 assets_ids: asset_ids,
                 msg_type: "market".into(),
             };
-            let json = serde_json::to_string(&msg)
-                .map_err(|e| WebSocketError::Protocol(e.to_string()))?;
+            let json =
+                serde_json::to_string(&msg).map_err(|e| WebSocketError::Protocol(e.to_string()))?;
             self.send_message(&json).await?;
         }
 
@@ -512,17 +514,16 @@ impl OrderBookWebSocket for PolymarketWebSocket {
         market_id: &str,
     ) -> Result<OrderbookStream, WebSocketError> {
         let senders = self.orderbook_senders.read().await;
-        let sender = senders
-            .get(market_id)
-            .ok_or_else(|| WebSocketError::Subscription(format!("not subscribed to {market_id}")))?;
+        let sender = senders.get(market_id).ok_or_else(|| {
+            WebSocketError::Subscription(format!("not subscribed to {market_id}"))
+        })?;
 
         let rx = sender.subscribe();
 
-        Ok(Box::pin(tokio_stream::wrappers::BroadcastStream::new(rx).filter_map(
-            |result| async move {
-                result.ok()
-            },
-        )))
+        Ok(Box::pin(
+            tokio_stream::wrappers::BroadcastStream::new(rx)
+                .filter_map(|result| async move { result.ok() }),
+        ))
     }
 }
 

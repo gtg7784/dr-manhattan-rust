@@ -24,7 +24,7 @@ async fn main() -> Result<()> {
         println!("ID: {}", market.id);
         println!("Q:  {}", market.question);
         println!("Outcomes: {:?}", market.outcomes);
-        
+
         if !market.prices.is_empty() {
             print!("Prices: ");
             for (outcome, price) in &market.prices {
@@ -32,8 +32,11 @@ async fn main() -> Result<()> {
             }
             println!();
         }
-        
-        println!("Volume: ${:.0} | Liquidity: ${:.0}", market.volume, market.liquidity);
+
+        println!(
+            "Volume: ${:.0} | Liquidity: ${:.0}",
+            market.volume, market.liquidity
+        );
     }
 
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");

@@ -151,7 +151,10 @@ impl ClobClient {
             .http
             .get(&url)
             .header("POLY_ADDRESS", format!("{:?}", self.address))
-            .header("POLY_SIGNATURE", format!("0x{}", hex::encode(signature.to_vec())))
+            .header(
+                "POLY_SIGNATURE",
+                format!("0x{}", hex::encode(signature.to_vec())),
+            )
             .header("POLY_TIMESTAMP", nonce.to_string())
             .header("POLY_NONCE", nonce.to_string())
             .send()
@@ -292,7 +295,7 @@ impl ClobClient {
 
     fn compute_domain_separator(&self) -> [u8; 32] {
         let domain_type_hash = keccak256(
-            b"EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+            b"EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)",
         );
 
         let name_hash = keccak256(b"Polymarket CTF Exchange");

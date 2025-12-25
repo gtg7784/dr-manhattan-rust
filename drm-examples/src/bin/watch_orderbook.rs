@@ -12,9 +12,9 @@ async fn main() -> Result<()> {
 
     let mut ws = PolymarketWebSocket::new();
 
-    let token_id = std::env::args()
-        .nth(1)
-        .unwrap_or_else(|| "21742633143463906290569050155826241533067272736897614950488156847949938836455".into());
+    let token_id = std::env::args().nth(1).unwrap_or_else(|| {
+        "21742633143463906290569050155826241533067272736897614950488156847949938836455".into()
+    });
 
     println!("Connecting to WebSocket...");
     ws.connect().await?;
@@ -41,19 +41,29 @@ async fn main() -> Result<()> {
         count += 1;
         println!("━━━ Update #{count} ━━━");
         println!("Market: {}", orderbook.market_id);
-        println!("Asset:  {}...", &orderbook.asset_id[..20.min(orderbook.asset_id.len())]);
+        println!(
+            "Asset:  {}...",
+            &orderbook.asset_id[..20.min(orderbook.asset_id.len())]
+        );
 
         if let Some(ts) = orderbook.timestamp {
             println!("Time:   {}", ts.format("%H:%M:%S%.3f"));
         }
 
         if let (Some(bid), Some(ask)) = (orderbook.best_bid(), orderbook.best_ask()) {
-            println!("Best Bid: {:.4} | Best Ask: {:.4} | Spread: {:.4}",
-                bid, ask, ask - bid);
+            println!(
+                "Best Bid: {:.4} | Best Ask: {:.4} | Spread: {:.4}",
+                bid,
+                ask,
+                ask - bid
+            );
         }
 
-        println!("Bids: {} levels | Asks: {} levels",
-            orderbook.bids.len(), orderbook.asks.len());
+        println!(
+            "Bids: {} levels | Asks: {} levels",
+            orderbook.bids.len(),
+            orderbook.asks.len()
+        );
 
         if !orderbook.bids.is_empty() {
             print!("  Top 3 bids: ");

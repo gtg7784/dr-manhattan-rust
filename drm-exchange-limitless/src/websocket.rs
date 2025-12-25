@@ -9,7 +9,9 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::{broadcast, RwLock};
 
-use drm_core::{Orderbook, OrderBookWebSocket, OrderbookStream, PriceLevel, WebSocketError, WebSocketState};
+use drm_core::{
+    OrderBookWebSocket, Orderbook, OrderbookStream, PriceLevel, WebSocketError, WebSocketState,
+};
 
 const WS_URL: &str = "wss://ws.limitless.exchange";
 const NAMESPACE: &str = "/markets";
@@ -125,8 +127,8 @@ impl LimitlessWebSocket {
             market_addresses: shared.subscribed_addresses.clone(),
         };
 
-        let json = serde_json::to_value(&payload)
-            .map_err(|e| WebSocketError::Protocol(e.to_string()))?;
+        let json =
+            serde_json::to_value(&payload).map_err(|e| WebSocketError::Protocol(e.to_string()))?;
 
         client
             .emit("subscribe_market_prices", json)
@@ -177,8 +179,16 @@ impl LimitlessWebSocket {
             .filter_map(Self::parse_price_level)
             .collect();
 
-        bids.sort_by(|a, b| b.price.partial_cmp(&a.price).unwrap_or(std::cmp::Ordering::Equal));
-        asks.sort_by(|a, b| a.price.partial_cmp(&b.price).unwrap_or(std::cmp::Ordering::Equal));
+        bids.sort_by(|a, b| {
+            b.price
+                .partial_cmp(&a.price)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+        asks.sort_by(|a, b| {
+            a.price
+                .partial_cmp(&b.price)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
 
         let orderbook = Orderbook {
             market_id: market_slug.clone(),
@@ -190,7 +200,9 @@ impl LimitlessWebSocket {
         };
 
         let mut shared = shared.write().await;
-        shared.orderbooks.insert(market_slug.clone(), orderbook.clone());
+        shared
+            .orderbooks
+            .insert(market_slug.clone(), orderbook.clone());
 
         if let Some(sender) = shared.orderbook_senders.get(&market_slug) {
             let _ = sender.send(Ok(orderbook));
@@ -235,7 +247,9 @@ impl LimitlessWebSocket {
         };
 
         let mut shared = shared.write().await;
-        shared.orderbooks.insert(market_address.clone(), orderbook.clone());
+        shared
+            .orderbooks
+            .insert(market_address.clone(), orderbook.clone());
 
         if let Some(sender) = shared.orderbook_senders.get(&market_address) {
             let _ = sender.send(Ok(orderbook));
@@ -402,31 +416,37 @@ impl OrderBookWebSocket for LimitlessWebSocket {
         market_id: &str,
     ) -> Result<OrderbookStream, WebSocketError> {
         let shared = self.shared.read().await;
-        let sender = shared
-            .orderbook_senders
-            .get(market_id)
-            .ok_or_else(|| WebSocketError::Subscription(format!("not subscribed to {market_id}")))?;
+        let sender = shared.orderbook_senders.get(market_id).ok_or_else(|| {
+            WebSocketError::Subscription(format!("not subscribed to {market_id}"))
+        })?;
 
         let rx = sender.subscribe();
 
         Ok(Box::pin(
-            tokio_stream::wrappers::BroadcastStream::new(rx).filter_map(|result| async move {
-                result.ok()
-            }),
+            tokio_stream::wrappers::BroadcastStream::new(rx)
+                .filter_map(|result| async move { result.ok() }),
         ))
     }
 }
 
 impl LimitlessWebSocket {
-    pub async fn subscribe_market_address(&mut self, market_address: &str) -> Result<(), WebSocketError> {
+    pub async fn subscribe_market_address(
+        &mut self,
+        market_address: &str,
+    ) -> Result<(), WebSocketError> {
         {
             let mut shared = self.shared.write().await;
-            if !shared.subscribed_addresses.contains(&market_address.to_string()) {
+            if !shared
+                .subscribed_addresses
+                .contains(&market_address.to_string())
+            {
                 shared.subscribed_addresses.push(market_address.to_string());
             }
             if !shared.orderbook_senders.contains_key(market_address) {
                 let (tx, _) = broadcast::channel(100);
-                shared.orderbook_senders.insert(market_address.to_string(), tx);
+                shared
+                    .orderbook_senders
+                    .insert(market_address.to_string(), tx);
             }
         }
 

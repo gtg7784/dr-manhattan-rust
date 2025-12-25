@@ -40,7 +40,10 @@ impl Order {
     }
 
     pub fn is_active(&self) -> bool {
-        matches!(self.status, OrderStatus::Open | OrderStatus::PartiallyFilled)
+        matches!(
+            self.status,
+            OrderStatus::Open | OrderStatus::PartiallyFilled
+        )
     }
 
     pub fn is_filled(&self) -> bool {

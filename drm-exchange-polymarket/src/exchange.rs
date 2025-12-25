@@ -4,15 +4,17 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use drm_core::{
-    CryptoHourlyMarket, CryptoMarketType, DrmError, Exchange, ExchangeInfo, FetchMarketsParams,
-    FetchOrdersParams, Market, MarketDirection, Nav, Order, Orderbook, OrderSide, OrderStatus,
-    Position, PriceLevel, PriceHistoryInterval, PricePoint, PublicTrade, RateLimiter,
-    normalize_token_symbol,
+    normalize_token_symbol, CryptoHourlyMarket, CryptoMarketType, DrmError, Exchange, ExchangeInfo,
+    FetchMarketsParams, FetchOrdersParams, Market, MarketDirection, Nav, Order, OrderSide,
+    OrderStatus, Orderbook, Position, PriceHistoryInterval, PriceLevel, PricePoint, PublicTrade,
+    RateLimiter,
 };
 use regex::Regex;
 
 use crate::client::HttpClient;
-use crate::clob::{ApiCredentials, ClobClient, ClobOrderData, ClobOrderSide, ClobOrderType, OrderArgs};
+use crate::clob::{
+    ApiCredentials, ClobClient, ClobOrderData, ClobOrderSide, ClobOrderType, OrderArgs,
+};
 use crate::config::PolymarketConfig;
 use crate::error::PolymarketError;
 use crate::websocket::PolymarketWebSocket;
@@ -75,10 +77,7 @@ impl Polymarket {
         self.rate_limiter.lock().await.wait().await;
     }
 
-    pub async fn get_orderbook(
-        &self,
-        token_id: &str,
-    ) -> Result<Orderbook, PolymarketError> {
+    pub async fn get_orderbook(&self, token_id: &str) -> Result<Orderbook, PolymarketError> {
         self.rate_limit().await;
 
         let url = format!("{}/book?token_id={}", crate::clob::CLOB_URL, token_id);
@@ -110,11 +109,19 @@ impl Polymarket {
                         .filter_map(|item| {
                             let price = item
                                 .get("price")
-                                .and_then(|p| p.as_str().and_then(|s| s.parse().ok()).or_else(|| p.as_f64()))
+                                .and_then(|p| {
+                                    p.as_str()
+                                        .and_then(|s| s.parse().ok())
+                                        .or_else(|| p.as_f64())
+                                })
                                 .unwrap_or(0.0);
                             let size = item
                                 .get("size")
-                                .and_then(|s| s.as_str().and_then(|s| s.parse().ok()).or_else(|| s.as_f64()))
+                                .and_then(|s| {
+                                    s.as_str()
+                                        .and_then(|s| s.parse().ok())
+                                        .or_else(|| s.as_f64())
+                                })
                                 .unwrap_or(0.0);
                             if price > 0.0 && size > 0.0 {
                                 Some(PriceLevel { price, size })
@@ -204,7 +211,10 @@ impl Polymarket {
         }
     }
 
-    pub async fn fetch_token_ids(&self, condition_id: &str) -> Result<Vec<String>, PolymarketError> {
+    pub async fn fetch_token_ids(
+        &self,
+        condition_id: &str,
+    ) -> Result<Vec<String>, PolymarketError> {
         self.rate_limit().await;
 
         let url = format!("{}/simplified-markets", crate::clob::CLOB_URL);
@@ -239,8 +249,12 @@ impl Polymarket {
                         .iter()
                         .filter_map(|t| {
                             if let Some(obj) = t.as_object() {
-                                obj.get("token_id").and_then(|v| v.as_str()).map(String::from)
-                            } else { t.as_str().map(|s| s.to_string()) }
+                                obj.get("token_id")
+                                    .and_then(|v| v.as_str())
+                                    .map(String::from)
+                            } else {
+                                t.as_str().map(|s| s.to_string())
+                            }
                         })
                         .collect();
 
@@ -261,7 +275,9 @@ impl Polymarket {
             }
         }
 
-        Err(PolymarketError::Api(format!("token IDs not found for market {condition_id}")))
+        Err(PolymarketError::Api(format!(
+            "token IDs not found for market {condition_id}"
+        )))
     }
 
     pub async fn fetch_price_history(
@@ -324,7 +340,8 @@ impl Polymarket {
         for item in history {
             let t = item.get("t").and_then(|v| v.as_i64());
             let p = item.get("p").and_then(|v| {
-                v.as_f64().or_else(|| v.as_str().and_then(|s| s.parse().ok()))
+                v.as_f64()
+                    .or_else(|| v.as_str().and_then(|s| s.parse().ok()))
             });
 
             if let (Some(timestamp), Some(price)) = (t, p) {
@@ -355,7 +372,9 @@ impl Polymarket {
             limit: Some(limit.unwrap_or(100)),
         };
 
-        let markets = self.fetch_markets(Some(params)).await
+        let markets = self
+            .fetch_markets(Some(params))
+            .await
             .map_err(|e| PolymarketError::Api(format!("{e}")))?;
 
         let query_lower = query.map(|q| q.to_lowercase());
@@ -478,36 +497,49 @@ impl Polymarket {
     fn parse_public_trade(&self, data: &serde_json::Value) -> Option<PublicTrade> {
         let obj = data.as_object()?;
 
-        let proxy_wallet = obj.get("proxyWallet")
+        let proxy_wallet = obj
+            .get("proxyWallet")
             .and_then(|v| v.as_str())
             .unwrap_or("")
             .to_string();
 
-        let side = obj.get("side")
+        let side = obj
+            .get("side")
             .and_then(|v| v.as_str())
             .unwrap_or("")
             .to_string();
 
-        let asset = obj.get("asset")
+        let asset = obj
+            .get("asset")
             .and_then(|v| v.as_str())
             .unwrap_or("")
             .to_string();
 
-        let condition_id = obj.get("conditionId")
+        let condition_id = obj
+            .get("conditionId")
             .or_else(|| obj.get("market"))
             .and_then(|v| v.as_str())
             .unwrap_or("")
             .to_string();
 
-        let size = obj.get("size")
-            .and_then(|v| v.as_f64().or_else(|| v.as_str().and_then(|s| s.parse().ok())))
+        let size = obj
+            .get("size")
+            .and_then(|v| {
+                v.as_f64()
+                    .or_else(|| v.as_str().and_then(|s| s.parse().ok()))
+            })
             .unwrap_or(0.0);
 
-        let price = obj.get("price")
-            .and_then(|v| v.as_f64().or_else(|| v.as_str().and_then(|s| s.parse().ok())))
+        let price = obj
+            .get("price")
+            .and_then(|v| {
+                v.as_f64()
+                    .or_else(|| v.as_str().and_then(|s| s.parse().ok()))
+            })
             .unwrap_or(0.0);
 
-        let timestamp = obj.get("timestamp")
+        let timestamp = obj
+            .get("timestamp")
             .or_else(|| obj.get("matchTime"))
             .and_then(|v| {
                 v.as_i64()
@@ -538,26 +570,51 @@ impl Polymarket {
             title: obj.get("title").and_then(|v| v.as_str()).map(String::from),
             slug: obj.get("slug").and_then(|v| v.as_str()).map(String::from),
             icon: obj.get("icon").and_then(|v| v.as_str()).map(String::from),
-            event_slug: obj.get("eventSlug").and_then(|v| v.as_str()).map(String::from),
-            outcome: obj.get("outcome").and_then(|v| v.as_str()).map(String::from),
-            outcome_index: obj.get("outcomeIndex").and_then(|v| v.as_u64()).map(|n| n as u32),
+            event_slug: obj
+                .get("eventSlug")
+                .and_then(|v| v.as_str())
+                .map(String::from),
+            outcome: obj
+                .get("outcome")
+                .and_then(|v| v.as_str())
+                .map(String::from),
+            outcome_index: obj
+                .get("outcomeIndex")
+                .and_then(|v| v.as_u64())
+                .map(|n| n as u32),
             name: obj.get("name").and_then(|v| v.as_str()).map(String::from),
-            pseudonym: obj.get("pseudonym").and_then(|v| v.as_str()).map(String::from),
+            pseudonym: obj
+                .get("pseudonym")
+                .and_then(|v| v.as_str())
+                .map(String::from),
             bio: obj.get("bio").and_then(|v| v.as_str()).map(String::from),
-            profile_image: obj.get("profileImage").and_then(|v| v.as_str()).map(String::from),
-            profile_image_optimized: obj.get("profileImageOptimized").and_then(|v| v.as_str()).map(String::from),
-            transaction_hash: obj.get("transactionHash").and_then(|v| v.as_str()).map(String::from),
+            profile_image: obj
+                .get("profileImage")
+                .and_then(|v| v.as_str())
+                .map(String::from),
+            profile_image_optimized: obj
+                .get("profileImageOptimized")
+                .and_then(|v| v.as_str())
+                .map(String::from),
+            transaction_hash: obj
+                .get("transactionHash")
+                .and_then(|v| v.as_str())
+                .map(String::from),
         })
     }
 
-    pub async fn fetch_positions_for_market(&self, market: &Market) -> Result<Vec<Position>, PolymarketError> {
+    pub async fn fetch_positions_for_market(
+        &self,
+        market: &Market,
+    ) -> Result<Vec<Position>, PolymarketError> {
         self.fetch_positions(Some(&market.id))
             .await
             .map_err(|e| PolymarketError::Api(format!("{e}")))
     }
 
     pub async fn calculate_nav(&self, market: &Market) -> Result<Nav, PolymarketError> {
-        let balances = self.fetch_balance()
+        let balances = self
+            .fetch_balance()
             .await
             .map_err(|e| PolymarketError::Api(format!("{e}")))?;
 
@@ -624,9 +681,9 @@ impl Polymarket {
             }
         }
 
-        let up_down_pattern = Regex::new(
-            r"(?i)(?P<token>Bitcoin|Ethereum|Solana|BTC|ETH|SOL|XRP)\s+Up or Down"
-        ).unwrap();
+        let up_down_pattern =
+            Regex::new(r"(?i)(?P<token>Bitcoin|Ethereum|Solana|BTC|ETH|SOL|XRP)\s+Up or Down")
+                .unwrap();
 
         let strike_pattern = Regex::new(
             r"(?i)(?:(?P<token1>BTC|ETH|SOL|BITCOIN|ETHEREUM|SOLANA)\s+.*?(?P<direction>above|below|over|under|reach)\s+[\$]?(?P<price1>[\d,]+(?:\.\d+)?))|(?:[\$]?(?P<price2>[\d,]+(?:\.\d+)?)\s+.*?(?P<token2>BTC|ETH|SOL|BITCOIN|ETHEREUM|SOLANA))"
@@ -668,7 +725,9 @@ impl Polymarket {
                     }
                 }
 
-                let expiry = market.close_time.unwrap_or_else(|| now + chrono::Duration::hours(1));
+                let expiry = market
+                    .close_time
+                    .unwrap_or_else(|| now + chrono::Duration::hours(1));
 
                 let crypto_market = CryptoHourlyMarket {
                     token_symbol: parsed_token,
@@ -682,14 +741,16 @@ impl Polymarket {
             }
 
             if let Some(caps) = strike_pattern.captures(&market.question) {
-                let token_str = caps.name("token1")
+                let token_str = caps
+                    .name("token1")
                     .or_else(|| caps.name("token2"))
                     .map(|m| m.as_str())
                     .unwrap_or("");
 
                 let parsed_token = normalize_token_symbol(token_str);
 
-                let price_str = caps.name("price1")
+                let price_str = caps
+                    .name("price1")
                     .or_else(|| caps.name("price2"))
                     .map(|m| m.as_str())
                     .unwrap_or("0");
@@ -702,14 +763,16 @@ impl Polymarket {
                     }
                 }
 
-                let expiry = market.close_time.unwrap_or_else(|| now + chrono::Duration::hours(1));
+                let expiry = market
+                    .close_time
+                    .unwrap_or_else(|| now + chrono::Duration::hours(1));
 
-                let direction = caps.name("direction").map(|m| {
-                    match m.as_str().to_lowercase().as_str() {
-                        "above" | "over" | "reach" => MarketDirection::Up,
-                        _ => MarketDirection::Down,
-                    }
-                });
+                let direction =
+                    caps.name("direction")
+                        .map(|m| match m.as_str().to_lowercase().as_str() {
+                            "above" | "over" | "reach" => MarketDirection::Up,
+                            _ => MarketDirection::Down,
+                        });
 
                 let crypto_market = CryptoHourlyMarket {
                     token_symbol: parsed_token,
@@ -770,10 +833,15 @@ impl Polymarket {
         if !response.status().is_success() {
             let status = response.status();
             let text = response.text().await.unwrap_or_default();
-            return Err(PolymarketError::Api(format!("get_tag_by_slug failed: {status} - {text}")));
+            return Err(PolymarketError::Api(format!(
+                "get_tag_by_slug failed: {status} - {text}"
+            )));
         }
 
-        response.json().await.map_err(|e| PolymarketError::Api(e.to_string()))
+        response
+            .json()
+            .await
+            .map_err(|e| PolymarketError::Api(e.to_string()))
     }
 
     fn parse_market(&self, data: serde_json::Value) -> Option<Market> {
@@ -786,7 +854,11 @@ impl Polymarket {
             .get("outcomes")
             .and_then(|v| {
                 if let Some(arr) = v.as_array() {
-                    Some(arr.iter().filter_map(|x| x.as_str().map(String::from)).collect())
+                    Some(
+                        arr.iter()
+                            .filter_map(|x| x.as_str().map(String::from))
+                            .collect(),
+                    )
                 } else if let Some(s) = v.as_str() {
                     serde_json::from_str(s).ok()
                 } else {
@@ -801,7 +873,11 @@ impl Polymarket {
         if let Some(prices_val) = prices_raw {
             let price_list: Vec<f64> = if let Some(arr) = prices_val.as_array() {
                 arr.iter()
-                    .filter_map(|v| v.as_str().and_then(|s| s.parse().ok()).or_else(|| v.as_f64()))
+                    .filter_map(|v| {
+                        v.as_str()
+                            .and_then(|s| s.parse().ok())
+                            .or_else(|| v.as_f64())
+                    })
                     .collect()
             } else if let Some(s) = prices_val.as_str() {
                 // API returns JSON-encoded string array: "[\"0.0045\", \"0.9955\"]"
@@ -824,13 +900,19 @@ impl Polymarket {
         let volume = obj
             .get("volumeNum")
             .or_else(|| obj.get("volume"))
-            .and_then(|v| v.as_f64().or_else(|| v.as_str().and_then(|s| s.parse().ok())))
+            .and_then(|v| {
+                v.as_f64()
+                    .or_else(|| v.as_str().and_then(|s| s.parse().ok()))
+            })
             .unwrap_or(0.0);
 
         let liquidity = obj
             .get("liquidityNum")
             .or_else(|| obj.get("liquidity"))
-            .and_then(|v| v.as_f64().or_else(|| v.as_str().and_then(|s| s.parse().ok())))
+            .and_then(|v| {
+                v.as_f64()
+                    .or_else(|| v.as_str().and_then(|s| s.parse().ok()))
+            })
             .unwrap_or(0.0);
 
         let tick_size = obj
@@ -916,8 +998,9 @@ impl Exchange for Polymarket {
             .await
             .map_err(|e| DrmError::Exchange(e.into()))?;
 
-        self.parse_market(data)
-            .ok_or_else(|| DrmError::Exchange(drm_core::ExchangeError::MarketNotFound(market_id.into())))
+        self.parse_market(data).ok_or_else(|| {
+            DrmError::Exchange(drm_core::ExchangeError::MarketNotFound(market_id.into()))
+        })
     }
 
     async fn fetch_markets_by_slug(&self, slug: &str) -> Result<Vec<Market>, DrmError> {
@@ -941,10 +1024,9 @@ impl Exchange for Polymarket {
             .await
             .map_err(|e| DrmError::Exchange(e.into()))?;
 
-        let event = events
-            .into_iter()
-            .next()
-            .ok_or_else(|| DrmError::Exchange(drm_core::ExchangeError::MarketNotFound(slug.into())))?;
+        let event = events.into_iter().next().ok_or_else(|| {
+            DrmError::Exchange(drm_core::ExchangeError::MarketNotFound(slug.into()))
+        })?;
 
         let markets_data = event
             .get("markets")
@@ -958,7 +1040,9 @@ impl Exchange for Polymarket {
             .collect();
 
         if markets.is_empty() {
-            return Err(DrmError::Exchange(drm_core::ExchangeError::MarketNotFound(slug.into())));
+            return Err(DrmError::Exchange(drm_core::ExchangeError::MarketNotFound(
+                slug.into(),
+            )));
         }
 
         Ok(markets)
@@ -973,20 +1057,21 @@ impl Exchange for Polymarket {
         size: f64,
         params: HashMap<String, String>,
     ) -> Result<Order, DrmError> {
-        let clob = self
-            .clob_client
-            .as_ref()
-            .ok_or_else(|| {
-                DrmError::Exchange(drm_core::ExchangeError::Authentication(
-                    "private key required for trading".into(),
-                ))
-            })?;
+        let clob = self.clob_client.as_ref().ok_or_else(|| {
+            DrmError::Exchange(drm_core::ExchangeError::Authentication(
+                "private key required for trading".into(),
+            ))
+        })?;
 
-        let token_id = params.get("token_id").cloned().unwrap_or_else(|| {
-            format!("{market_id}:{outcome}")
-        });
+        let token_id = params
+            .get("token_id")
+            .cloned()
+            .unwrap_or_else(|| format!("{market_id}:{outcome}"));
 
-        let order_type_str = params.get("order_type").map(|s| s.as_str()).unwrap_or("GTC");
+        let order_type_str = params
+            .get("order_type")
+            .map(|s| s.as_str())
+            .unwrap_or("GTC");
         let order_type = match order_type_str.to_uppercase().as_str() {
             "FOK" => ClobOrderType::Fok,
             "IOC" => ClobOrderType::Ioc,
@@ -1016,12 +1101,10 @@ impl Exchange for Polymarket {
             .await
             .map_err(|e| DrmError::Exchange(e.into()))?;
 
-        let order_id = response
-            .order_id
-            .ok_or_else(|| {
-                let msg = response.error_msg.unwrap_or_else(|| "unknown error".into());
-                DrmError::Exchange(drm_core::ExchangeError::OrderRejected(msg))
-            })?;
+        let order_id = response.order_id.ok_or_else(|| {
+            let msg = response.error_msg.unwrap_or_else(|| "unknown error".into());
+            DrmError::Exchange(drm_core::ExchangeError::OrderRejected(msg))
+        })?;
 
         Ok(Order {
             id: order_id,
@@ -1042,14 +1125,11 @@ impl Exchange for Polymarket {
         order_id: &str,
         market_id: Option<&str>,
     ) -> Result<Order, DrmError> {
-        let clob = self
-            .clob_client
-            .as_ref()
-            .ok_or_else(|| {
-                DrmError::Exchange(drm_core::ExchangeError::Authentication(
-                    "private key required for trading".into(),
-                ))
-            })?;
+        let clob = self.clob_client.as_ref().ok_or_else(|| {
+            DrmError::Exchange(drm_core::ExchangeError::Authentication(
+                "private key required for trading".into(),
+            ))
+        })?;
 
         clob.lock()
             .await
@@ -1076,14 +1156,11 @@ impl Exchange for Polymarket {
         order_id: &str,
         _market_id: Option<&str>,
     ) -> Result<Order, DrmError> {
-        let clob = self
-            .clob_client
-            .as_ref()
-            .ok_or_else(|| {
-                DrmError::Exchange(drm_core::ExchangeError::Authentication(
-                    "private key required".into(),
-                ))
-            })?;
+        let clob = self.clob_client.as_ref().ok_or_else(|| {
+            DrmError::Exchange(drm_core::ExchangeError::Authentication(
+                "private key required".into(),
+            ))
+        })?;
 
         let data = clob
             .lock()
@@ -1099,14 +1176,11 @@ impl Exchange for Polymarket {
         &self,
         _params: Option<FetchOrdersParams>,
     ) -> Result<Vec<Order>, DrmError> {
-        let clob = self
-            .clob_client
-            .as_ref()
-            .ok_or_else(|| {
-                DrmError::Exchange(drm_core::ExchangeError::Authentication(
-                    "private key required".into(),
-                ))
-            })?;
+        let clob = self.clob_client.as_ref().ok_or_else(|| {
+            DrmError::Exchange(drm_core::ExchangeError::Authentication(
+                "private key required".into(),
+            ))
+        })?;
 
         let orders = clob
             .lock()
@@ -1118,18 +1192,12 @@ impl Exchange for Polymarket {
         Ok(orders.iter().map(|o| self.parse_clob_order(o)).collect())
     }
 
-    async fn fetch_positions(
-        &self,
-        market_id: Option<&str>,
-    ) -> Result<Vec<Position>, DrmError> {
-        let clob = self
-            .clob_client
-            .as_ref()
-            .ok_or_else(|| {
-                DrmError::Exchange(drm_core::ExchangeError::Authentication(
-                    "private key required".into(),
-                ))
-            })?;
+    async fn fetch_positions(&self, market_id: Option<&str>) -> Result<Vec<Position>, DrmError> {
+        let clob = self.clob_client.as_ref().ok_or_else(|| {
+            DrmError::Exchange(drm_core::ExchangeError::Authentication(
+                "private key required".into(),
+            ))
+        })?;
 
         let market_id = match market_id {
             Some(id) => id,
@@ -1143,7 +1211,11 @@ impl Exchange for Polymarket {
             .get("clobTokenIds")
             .and_then(|v| {
                 if let Some(arr) = v.as_array() {
-                    Some(arr.iter().filter_map(|x| x.as_str().map(String::from)).collect())
+                    Some(
+                        arr.iter()
+                            .filter_map(|x| x.as_str().map(String::from))
+                            .collect(),
+                    )
                 } else if let Some(s) = v.as_str() {
                     serde_json::from_str(s).ok()
                 } else {
@@ -1163,11 +1235,13 @@ impl Exchange for Polymarket {
             let balance = clob.get_token_balance(token_id).await.unwrap_or(0.0);
 
             if balance > 0.0 {
-                let outcome = market
-                    .outcomes
-                    .get(i)
-                    .cloned()
-                    .unwrap_or_else(|| if i == 0 { "Yes".into() } else { "No".into() });
+                let outcome = market.outcomes.get(i).cloned().unwrap_or_else(|| {
+                    if i == 0 {
+                        "Yes".into()
+                    } else {
+                        "No".into()
+                    }
+                });
 
                 let current_price = market.prices.get(&outcome).copied().unwrap_or(0.0);
 
@@ -1185,14 +1259,11 @@ impl Exchange for Polymarket {
     }
 
     async fn fetch_balance(&self) -> Result<HashMap<String, f64>, DrmError> {
-        let clob = self
-            .clob_client
-            .as_ref()
-            .ok_or_else(|| {
-                DrmError::Exchange(drm_core::ExchangeError::Authentication(
-                    "private key required".into(),
-                ))
-            })?;
+        let clob = self.clob_client.as_ref().ok_or_else(|| {
+            DrmError::Exchange(drm_core::ExchangeError::Authentication(
+                "private key required".into(),
+            ))
+        })?;
 
         let data = clob
             .lock()

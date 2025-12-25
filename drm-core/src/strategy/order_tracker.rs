@@ -84,7 +84,14 @@ impl OrderTracker {
         tracked.remove(order_id);
     }
 
-    pub fn handle_trade(&self, order_id: &str, fill_size: f64, fill_price: f64, market_id: Option<&str>, outcome: Option<&str>) {
+    pub fn handle_trade(
+        &self,
+        order_id: &str,
+        fill_size: f64,
+        fill_price: f64,
+        market_id: Option<&str>,
+        outcome: Option<&str>,
+    ) {
         let (event, updated_order) = {
             let mut tracked = self.tracked_orders.write().unwrap();
 

@@ -195,12 +195,7 @@ impl<E: Exchange + 'static> BaseStrategy<E> {
 
     pub fn log(&self, message: &str) {
         if self.config.verbose {
-            println!(
-                "[{}:{}] {}",
-                self.exchange.id(),
-                self.market_id,
-                message
-            );
+            println!("[{}:{}] {}", self.exchange.id(), self.market_id, message);
         }
     }
 
@@ -324,11 +319,7 @@ impl<E: Exchange + 'static> BaseStrategy<E> {
         }
     }
 
-    pub fn calculate_spread_prices(
-        &self,
-        mid_price: f64,
-        spread_bps: u32,
-    ) -> (f64, f64) {
+    pub fn calculate_spread_prices(&self, mid_price: f64, spread_bps: u32) -> (f64, f64) {
         let half_spread = mid_price * (spread_bps as f64 / 10000.0) / 2.0;
         let bid = mid_price - half_spread;
         let ask = mid_price + half_spread;

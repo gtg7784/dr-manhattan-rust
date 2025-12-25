@@ -13,9 +13,7 @@ pub struct HttpClient {
 
 impl HttpClient {
     pub fn new(config: &PolymarketConfig) -> Result<Self, PolymarketError> {
-        let client = Client::builder()
-            .timeout(config.base.timeout)
-            .build()?;
+        let client = Client::builder().timeout(config.base.timeout).build()?;
 
         Ok(Self {
             client,

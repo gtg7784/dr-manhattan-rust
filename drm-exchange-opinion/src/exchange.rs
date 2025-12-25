@@ -4,9 +4,9 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use drm_core::{
-    DrmError, Exchange, ExchangeInfo, FetchMarketsParams, FetchOrdersParams,
-    Market, Nav, Order, Orderbook, OrderSide, OrderStatus, Position, PriceLevel, PriceHistoryInterval,
-    PricePoint, RateLimiter,
+    DrmError, Exchange, ExchangeInfo, FetchMarketsParams, FetchOrdersParams, Market, Nav, Order,
+    OrderSide, OrderStatus, Orderbook, Position, PriceHistoryInterval, PriceLevel, PricePoint,
+    RateLimiter,
 };
 
 use crate::config::OpinionConfig;
@@ -65,7 +65,10 @@ impl Opinion {
         b
     }
 
-    async fn get<T: serde::de::DeserializeOwned>(&self, endpoint: &str) -> Result<ApiResponse<T>, OpinionError> {
+    async fn get<T: serde::de::DeserializeOwned>(
+        &self,
+        endpoint: &str,
+    ) -> Result<ApiResponse<T>, OpinionError> {
         self.rate_limit().await;
 
         let url = format!("{}{}", self.config.api_url, endpoint);
@@ -85,7 +88,10 @@ impl Opinion {
             return Err(OpinionError::Api(msg));
         }
 
-        response.json().await.map_err(|e| OpinionError::Api(e.to_string()))
+        response
+            .json()
+            .await
+            .map_err(|e| OpinionError::Api(e.to_string()))
     }
 
     async fn post<T: serde::de::DeserializeOwned>(
@@ -112,7 +118,10 @@ impl Opinion {
             return Err(OpinionError::Api(msg));
         }
 
-        response.json().await.map_err(|e| OpinionError::Api(e.to_string()))
+        response
+            .json()
+            .await
+            .map_err(|e| OpinionError::Api(e.to_string()))
     }
 
     fn ensure_auth(&self) -> Result<(), OpinionError> {
@@ -143,9 +152,18 @@ impl Opinion {
             .unwrap_or("")
             .to_string();
 
-        let yes_token = obj.get("yes_token_id").and_then(|v| v.as_str()).map(String::from);
-        let no_token = obj.get("no_token_id").and_then(|v| v.as_str()).map(String::from);
-        let yes_label = obj.get("yes_label").and_then(|v| v.as_str()).unwrap_or("Yes");
+        let yes_token = obj
+            .get("yes_token_id")
+            .and_then(|v| v.as_str())
+            .map(String::from);
+        let no_token = obj
+            .get("no_token_id")
+            .and_then(|v| v.as_str())
+            .map(String::from);
+        let yes_label = obj
+            .get("yes_label")
+            .and_then(|v| v.as_str())
+            .unwrap_or("Yes");
         let no_label = obj.get("no_label").and_then(|v| v.as_str()).unwrap_or("No");
 
         let mut outcomes = Vec::new();
@@ -173,7 +191,10 @@ impl Opinion {
 
         let volume = obj
             .get("volume")
-            .and_then(|v| v.as_f64().or_else(|| v.as_str().and_then(|s| s.parse().ok())))
+            .and_then(|v| {
+                v.as_f64()
+                    .or_else(|| v.as_str().and_then(|s| s.parse().ok()))
+            })
             .unwrap_or(0.0);
 
         let liquidity = obj.get("liquidity").and_then(|v| v.as_f64()).unwrap_or(0.0);
@@ -217,21 +238,37 @@ impl Opinion {
 
         let id = obj
             .and_then(|o| o.get("order_id").or(o.get("id")).or(o.get("orderID")))
-            .and_then(|v| v.as_str().map(String::from).or_else(|| v.as_i64().map(|n| n.to_string())))
+            .and_then(|v| {
+                v.as_str()
+                    .map(String::from)
+                    .or_else(|| v.as_i64().map(|n| n.to_string()))
+            })
             .unwrap_or_default();
 
         let market_id = obj
             .and_then(|o| o.get("topic_id").or(o.get("market_id")))
-            .and_then(|v| v.as_str().map(String::from).or_else(|| v.as_i64().map(|n| n.to_string())))
+            .and_then(|v| {
+                v.as_str()
+                    .map(String::from)
+                    .or_else(|| v.as_i64().map(|n| n.to_string()))
+            })
             .unwrap_or_default();
 
         let side = obj
             .and_then(|o| o.get("side_enum").or(o.get("side")))
             .map(|v| {
                 if let Some(s) = v.as_str() {
-                    if s.to_lowercase() == "buy" { OrderSide::Buy } else { OrderSide::Sell }
+                    if s.to_lowercase() == "buy" {
+                        OrderSide::Buy
+                    } else {
+                        OrderSide::Sell
+                    }
                 } else if let Some(n) = v.as_i64() {
-                    if n == 1 { OrderSide::Buy } else { OrderSide::Sell }
+                    if n == 1 {
+                        OrderSide::Buy
+                    } else {
+                        OrderSide::Sell
+                    }
                 } else {
                     OrderSide::Buy
                 }
@@ -270,12 +307,20 @@ impl Opinion {
             .unwrap_or(0.0);
 
         let size = obj
-            .and_then(|o| o.get("order_shares").or(o.get("maker_amount")).or(o.get("size")))
+            .and_then(|o| {
+                o.get("order_shares")
+                    .or(o.get("maker_amount"))
+                    .or(o.get("size"))
+            })
             .and_then(|v| v.as_f64())
             .unwrap_or(0.0);
 
         let filled = obj
-            .and_then(|o| o.get("filled_shares").or(o.get("matched_amount")).or(o.get("filled")))
+            .and_then(|o| {
+                o.get("filled_shares")
+                    .or(o.get("matched_amount"))
+                    .or(o.get("filled"))
+            })
             .and_then(|v| v.as_f64())
             .unwrap_or(0.0);
 
@@ -317,7 +362,11 @@ impl Opinion {
 
         let market_id = obj
             .and_then(|o| o.get("topic_id").or(o.get("market_id")))
-            .and_then(|v| v.as_str().map(String::from).or_else(|| v.as_i64().map(|n| n.to_string())))
+            .and_then(|v| {
+                v.as_str()
+                    .map(String::from)
+                    .or_else(|| v.as_i64().map(|n| n.to_string()))
+            })
             .unwrap_or_default();
 
         let outcome = obj
@@ -362,8 +411,20 @@ impl Opinion {
                 if let Some(data) = result.data {
                     if let Some(bid_arr) = data.get("bids").and_then(|v| v.as_array()) {
                         for item in bid_arr {
-                            let price = item.get("price").and_then(|p| p.as_f64().or_else(|| p.as_str().and_then(|s| s.parse().ok()))).unwrap_or(0.0);
-                            let size = item.get("size").and_then(|s| s.as_f64().or_else(|| s.as_str().and_then(|s| s.parse().ok()))).unwrap_or(0.0);
+                            let price = item
+                                .get("price")
+                                .and_then(|p| {
+                                    p.as_f64()
+                                        .or_else(|| p.as_str().and_then(|s| s.parse().ok()))
+                                })
+                                .unwrap_or(0.0);
+                            let size = item
+                                .get("size")
+                                .and_then(|s| {
+                                    s.as_f64()
+                                        .or_else(|| s.as_str().and_then(|s| s.parse().ok()))
+                                })
+                                .unwrap_or(0.0);
                             if price > 0.0 && size > 0.0 {
                                 bids.push(PriceLevel { price, size });
                             }
@@ -371,8 +432,20 @@ impl Opinion {
                     }
                     if let Some(ask_arr) = data.get("asks").and_then(|v| v.as_array()) {
                         for item in ask_arr {
-                            let price = item.get("price").and_then(|p| p.as_f64().or_else(|| p.as_str().and_then(|s| s.parse().ok()))).unwrap_or(0.0);
-                            let size = item.get("size").and_then(|s| s.as_f64().or_else(|| s.as_str().and_then(|s| s.parse().ok()))).unwrap_or(0.0);
+                            let price = item
+                                .get("price")
+                                .and_then(|p| {
+                                    p.as_f64()
+                                        .or_else(|| p.as_str().and_then(|s| s.parse().ok()))
+                                })
+                                .unwrap_or(0.0);
+                            let size = item
+                                .get("size")
+                                .and_then(|s| {
+                                    s.as_f64()
+                                        .or_else(|| s.as_str().and_then(|s| s.parse().ok()))
+                                })
+                                .unwrap_or(0.0);
                             if price > 0.0 && size > 0.0 {
                                 asks.push(PriceLevel { price, size });
                             }
@@ -382,8 +455,16 @@ impl Opinion {
             }
         }
 
-        bids.sort_by(|a, b| b.price.partial_cmp(&a.price).unwrap_or(std::cmp::Ordering::Equal));
-        asks.sort_by(|a, b| a.price.partial_cmp(&b.price).unwrap_or(std::cmp::Ordering::Equal));
+        bids.sort_by(|a, b| {
+            b.price
+                .partial_cmp(&a.price)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+        asks.sort_by(|a, b| {
+            a.price
+                .partial_cmp(&b.price)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
 
         Ok(Orderbook {
             market_id: String::new(),
@@ -419,16 +500,21 @@ impl Opinion {
         }
 
         let resp: ApiResponse<serde_json::Value> = self
-            .post("/api/v1/orders/cancel-all", &serde_json::Value::Object(body))
+            .post(
+                "/api/v1/orders/cancel-all",
+                &serde_json::Value::Object(body),
+            )
             .await?;
 
         if resp.errno != 0 {
             return Err(OpinionError::Api(
-                resp.errmsg.unwrap_or_else(|| "cancel all orders failed".into()),
+                resp.errmsg
+                    .unwrap_or_else(|| "cancel all orders failed".into()),
             ));
         }
 
-        Ok(resp.result
+        Ok(resp
+            .result
             .and_then(|r| r.data)
             .unwrap_or(serde_json::json!({"cancelled": true})))
     }
@@ -442,7 +528,8 @@ impl Opinion {
 
         if resp.errno != 0 {
             return Err(OpinionError::Api(
-                resp.errmsg.unwrap_or_else(|| "enable trading failed".into()),
+                resp.errmsg
+                    .unwrap_or_else(|| "enable trading failed".into()),
             ));
         }
 
@@ -475,20 +562,29 @@ impl Opinion {
 
         if resp.errno != 0 {
             return Err(OpinionError::Api(
-                resp.errmsg.unwrap_or_else(|| "fetch price history failed".into()),
+                resp.errmsg
+                    .unwrap_or_else(|| "fetch price history failed".into()),
             ));
         }
 
-        let history = resp.result
-            .and_then(|r| r.list.or_else(|| r.data.and_then(|d| d.as_array().cloned())))
+        let history = resp
+            .result
+            .and_then(|r| {
+                r.list
+                    .or_else(|| r.data.and_then(|d| d.as_array().cloned()))
+            })
             .unwrap_or_default();
 
         let mut points = Vec::with_capacity(history.len());
         for item in history {
-            let t = item.get("timestamp").or_else(|| item.get("t"))
+            let t = item
+                .get("timestamp")
+                .or_else(|| item.get("t"))
                 .and_then(|v| v.as_i64());
-            let p = item.get("price").or_else(|| item.get("p"))
-                .and_then(|v| v.as_f64().or_else(|| v.as_str().and_then(|s| s.parse().ok())));
+            let p = item.get("price").or_else(|| item.get("p")).and_then(|v| {
+                v.as_f64()
+                    .or_else(|| v.as_str().and_then(|s| s.parse().ok()))
+            });
 
             if let (Some(timestamp), Some(price)) = (t, p) {
                 if let Some(dt) = chrono::DateTime::from_timestamp(timestamp, 0) {
@@ -517,7 +613,9 @@ impl Opinion {
             limit: Some(limit.unwrap_or(20).min(20)),
         };
 
-        let markets = self.fetch_markets(Some(params)).await
+        let markets = self
+            .fetch_markets(Some(params))
+            .await
             .map_err(|e| OpinionError::Api(format!("{e}")))?;
 
         let query_lower = query.map(|q| q.to_lowercase());
@@ -589,7 +687,10 @@ impl Opinion {
         ))
     }
 
-    pub async fn fetch_positions_for_market(&self, market: &Market) -> Result<Vec<Position>, OpinionError> {
+    pub async fn fetch_positions_for_market(
+        &self,
+        market: &Market,
+    ) -> Result<Vec<Position>, OpinionError> {
         self.ensure_auth()?;
         self.fetch_positions(Some(&market.id))
             .await
@@ -597,7 +698,8 @@ impl Opinion {
     }
 
     pub async fn fetch_token_ids(&self, market_id: &str) -> Result<Vec<String>, OpinionError> {
-        let market = self.fetch_market(market_id)
+        let market = self
+            .fetch_market(market_id)
             .await
             .map_err(|e| OpinionError::Api(format!("{e}")))?;
 
@@ -606,7 +708,11 @@ impl Opinion {
             .get("clobTokenIds")
             .and_then(|v| {
                 if let Some(arr) = v.as_array() {
-                    Some(arr.iter().filter_map(|x| x.as_str().map(String::from)).collect())
+                    Some(
+                        arr.iter()
+                            .filter_map(|x| x.as_str().map(String::from))
+                            .collect(),
+                    )
                 } else if let Some(s) = v.as_str() {
                     serde_json::from_str(s).ok()
                 } else {
@@ -616,14 +722,17 @@ impl Opinion {
             .unwrap_or_default();
 
         if token_ids.is_empty() {
-            return Err(OpinionError::Api(format!("no token IDs found for market {market_id}")));
+            return Err(OpinionError::Api(format!(
+                "no token IDs found for market {market_id}"
+            )));
         }
 
         Ok(token_ids)
     }
 
     pub async fn calculate_nav(&self, market: &Market) -> Result<Nav, OpinionError> {
-        let balances = self.fetch_balance()
+        let balances = self
+            .fetch_balance()
             .await
             .map_err(|e| OpinionError::Api(format!("{e}")))?;
 
@@ -661,13 +770,16 @@ impl Exchange for Opinion {
     ) -> Result<Vec<Market>, DrmError> {
         let params = params.unwrap_or_default();
 
-        let status = if params.active_only { "ACTIVATED" } else { "ALL" };
+        let status = if params.active_only {
+            "ACTIVATED"
+        } else {
+            "ALL"
+        };
         let limit = params.limit.unwrap_or(20).min(20);
         let page = 1;
 
-        let endpoint = format!(
-            "/api/v1/markets?topic_type=ALL&status={status}&page={page}&limit={limit}"
-        );
+        let endpoint =
+            format!("/api/v1/markets?topic_type=ALL&status={status}&page={page}&limit={limit}");
 
         let resp: ApiResponse<serde_json::Value> = self
             .get(&endpoint)
@@ -680,10 +792,7 @@ impl Exchange for Opinion {
             )));
         }
 
-        let markets_list = resp
-            .result
-            .and_then(|r| r.list)
-            .unwrap_or_default();
+        let markets_list = resp.result.and_then(|r| r.list).unwrap_or_default();
 
         let markets: Vec<Market> = markets_list
             .into_iter()
@@ -709,7 +818,9 @@ impl Exchange for Opinion {
         resp.result
             .and_then(|r| r.data)
             .and_then(|d| self.parse_market(d))
-            .ok_or_else(|| DrmError::Exchange(drm_core::ExchangeError::MarketNotFound(market_id.into())))
+            .ok_or_else(|| {
+                DrmError::Exchange(drm_core::ExchangeError::MarketNotFound(market_id.into()))
+            })
     }
 
     async fn fetch_markets_by_slug(&self, slug: &str) -> Result<Vec<Market>, DrmError> {
@@ -719,10 +830,7 @@ impl Exchange for Opinion {
             .await
             .map_err(|e| DrmError::Exchange(e.into()))?;
 
-        let markets_list = resp
-            .result
-            .and_then(|r| r.list)
-            .unwrap_or_default();
+        let markets_list = resp.result.and_then(|r| r.list).unwrap_or_default();
 
         let markets: Vec<Market> = markets_list
             .into_iter()
@@ -730,7 +838,9 @@ impl Exchange for Opinion {
             .collect();
 
         if markets.is_empty() {
-            return Err(DrmError::Exchange(drm_core::ExchangeError::MarketNotFound(slug.into())));
+            return Err(DrmError::Exchange(drm_core::ExchangeError::MarketNotFound(
+                slug.into(),
+            )));
         }
 
         Ok(markets)
@@ -745,7 +855,8 @@ impl Exchange for Opinion {
         size: f64,
         params: HashMap<String, String>,
     ) -> Result<Order, DrmError> {
-        self.ensure_auth().map_err(|e| DrmError::Exchange(e.into()))?;
+        self.ensure_auth()
+            .map_err(|e| DrmError::Exchange(e.into()))?;
 
         let token_id = params.get("token_id").ok_or_else(|| {
             DrmError::Exchange(drm_core::ExchangeError::InvalidOrder(
@@ -804,7 +915,8 @@ impl Exchange for Opinion {
         order_id: &str,
         market_id: Option<&str>,
     ) -> Result<Order, DrmError> {
-        self.ensure_auth().map_err(|e| DrmError::Exchange(e.into()))?;
+        self.ensure_auth()
+            .map_err(|e| DrmError::Exchange(e.into()))?;
 
         let endpoint = format!("/api/v1/orders/{order_id}/cancel");
         let resp: ApiResponse<serde_json::Value> = self
@@ -837,7 +949,8 @@ impl Exchange for Opinion {
         order_id: &str,
         _market_id: Option<&str>,
     ) -> Result<Order, DrmError> {
-        self.ensure_auth().map_err(|e| DrmError::Exchange(e.into()))?;
+        self.ensure_auth()
+            .map_err(|e| DrmError::Exchange(e.into()))?;
 
         let endpoint = format!("/api/v1/orders/{order_id}");
         let resp: ApiResponse<serde_json::Value> = self
@@ -846,15 +959,14 @@ impl Exchange for Opinion {
             .map_err(|e| DrmError::Exchange(e.into()))?;
 
         if resp.errno != 0 {
-            return Err(DrmError::Exchange(drm_core::ExchangeError::Api(
-                format!("Order {order_id} not found"),
-            )));
+            return Err(DrmError::Exchange(drm_core::ExchangeError::Api(format!(
+                "Order {order_id} not found"
+            ))));
         }
 
-        let data = resp
-            .result
-            .and_then(|r| r.data)
-            .ok_or_else(|| DrmError::Exchange(drm_core::ExchangeError::Api("order not found".into())))?;
+        let data = resp.result.and_then(|r| r.data).ok_or_else(|| {
+            DrmError::Exchange(drm_core::ExchangeError::Api("order not found".into()))
+        })?;
 
         Ok(self.parse_order(&data))
     }
@@ -863,7 +975,8 @@ impl Exchange for Opinion {
         &self,
         _params: Option<FetchOrdersParams>,
     ) -> Result<Vec<Order>, DrmError> {
-        self.ensure_auth().map_err(|e| DrmError::Exchange(e.into()))?;
+        self.ensure_auth()
+            .map_err(|e| DrmError::Exchange(e.into()))?;
 
         let endpoint = "/api/v1/orders?status=1&page=1&limit=100";
         let resp: ApiResponse<serde_json::Value> = self
@@ -879,11 +992,9 @@ impl Exchange for Opinion {
         Ok(orders_list.iter().map(|o| self.parse_order(o)).collect())
     }
 
-    async fn fetch_positions(
-        &self,
-        _market_id: Option<&str>,
-    ) -> Result<Vec<Position>, DrmError> {
-        self.ensure_auth().map_err(|e| DrmError::Exchange(e.into()))?;
+    async fn fetch_positions(&self, _market_id: Option<&str>) -> Result<Vec<Position>, DrmError> {
+        self.ensure_auth()
+            .map_err(|e| DrmError::Exchange(e.into()))?;
 
         let endpoint = "/api/v1/positions?page=1&limit=100";
         let resp: ApiResponse<serde_json::Value> = self
@@ -896,11 +1007,15 @@ impl Exchange for Opinion {
         }
 
         let positions_list = resp.result.and_then(|r| r.list).unwrap_or_default();
-        Ok(positions_list.iter().map(|p| self.parse_position(p)).collect())
+        Ok(positions_list
+            .iter()
+            .map(|p| self.parse_position(p))
+            .collect())
     }
 
     async fn fetch_balance(&self) -> Result<HashMap<String, f64>, DrmError> {
-        self.ensure_auth().map_err(|e| DrmError::Exchange(e.into()))?;
+        self.ensure_auth()
+            .map_err(|e| DrmError::Exchange(e.into()))?;
 
         let endpoint = "/api/v1/balances";
         let resp: ApiResponse<serde_json::Value> = self

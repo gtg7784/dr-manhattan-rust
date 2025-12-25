@@ -20,9 +20,9 @@ pub trait Exchange: Send + Sync {
 
     async fn fetch_markets_by_slug(&self, slug: &str) -> Result<Vec<Market>, DrmError> {
         let _ = slug;
-        Err(DrmError::Exchange(crate::error::ExchangeError::NotSupported(
-            "fetch_markets_by_slug".into(),
-        )))
+        Err(DrmError::Exchange(
+            crate::error::ExchangeError::NotSupported("fetch_markets_by_slug".into()),
+        ))
     }
 
     async fn create_order(
@@ -41,21 +41,15 @@ pub trait Exchange: Send + Sync {
         market_id: Option<&str>,
     ) -> Result<Order, DrmError>;
 
-    async fn fetch_order(
-        &self,
-        order_id: &str,
-        market_id: Option<&str>,
-    ) -> Result<Order, DrmError>;
+    async fn fetch_order(&self, order_id: &str, market_id: Option<&str>)
+        -> Result<Order, DrmError>;
 
     async fn fetch_open_orders(
         &self,
         params: Option<FetchOrdersParams>,
     ) -> Result<Vec<Order>, DrmError>;
 
-    async fn fetch_positions(
-        &self,
-        market_id: Option<&str>,
-    ) -> Result<Vec<Position>, DrmError>;
+    async fn fetch_positions(&self, market_id: Option<&str>) -> Result<Vec<Position>, DrmError>;
 
     async fn fetch_balance(&self) -> Result<HashMap<String, f64>, DrmError>;
 

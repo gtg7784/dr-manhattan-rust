@@ -269,7 +269,8 @@ impl LimitlessClobClient {
 
     /// Register token ID to slug mapping
     pub fn register_token_mapping(&mut self, token_id: &str, slug: &str, is_no_token: bool) {
-        self.token_to_slug.insert(token_id.to_string(), slug.to_string());
+        self.token_to_slug
+            .insert(token_id.to_string(), slug.to_string());
         if is_no_token {
             self.no_tokens.insert(token_id.to_string());
         }
@@ -434,14 +435,12 @@ impl LimitlessClobClient {
 
     fn compute_domain_separator(&self, exchange_address: &str) -> [u8; 32] {
         let domain_type_hash = keccak256(
-            b"EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+            b"EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)",
         );
 
         let name_hash = keccak256(b"Limitless CTF Exchange");
         let version_hash = keccak256(b"1");
-        let contract: Address = exchange_address
-            .parse()
-            .expect("invalid exchange address");
+        let contract: Address = exchange_address.parse().expect("invalid exchange address");
 
         keccak256(ethers::abi::encode(&[
             ethers::abi::Token::FixedBytes(domain_type_hash.to_vec()),
@@ -532,7 +531,9 @@ impl LimitlessClobClient {
 
         if !response.status().is_success() {
             let text = response.text().await.unwrap_or_default();
-            return Err(LimitlessError::Api(format!("cancel all orders failed: {text}")));
+            return Err(LimitlessError::Api(format!(
+                "cancel all orders failed: {text}"
+            )));
         }
 
         Ok(())
@@ -599,9 +600,7 @@ impl LimitlessClobClient {
             .get("data")
             .and_then(|v| v.as_array())
             .cloned()
-            .unwrap_or_else(|| {
-                data.as_array().cloned().unwrap_or_default()
-            });
+            .unwrap_or_else(|| data.as_array().cloned().unwrap_or_default());
 
         let orders: Vec<LimitlessOrderData> = orders_arr
             .into_iter()
@@ -646,9 +645,7 @@ impl LimitlessClobClient {
             .get("data")
             .and_then(|v| v.as_array())
             .cloned()
-            .unwrap_or_else(|| {
-                data.as_array().cloned().unwrap_or_default()
-            });
+            .unwrap_or_else(|| data.as_array().cloned().unwrap_or_default());
 
         let positions: Vec<LimitlessPosition> = positions_arr
             .into_iter()

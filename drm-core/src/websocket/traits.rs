@@ -5,8 +5,7 @@ use std::pin::Pin;
 use crate::error::WebSocketError;
 use crate::models::Orderbook;
 
-pub type OrderbookStream =
-    Pin<Box<dyn Stream<Item = Result<Orderbook, WebSocketError>> + Send>>;
+pub type OrderbookStream = Pin<Box<dyn Stream<Item = Result<Orderbook, WebSocketError>> + Send>>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WebSocketState {

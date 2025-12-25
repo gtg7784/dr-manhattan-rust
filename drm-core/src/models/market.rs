@@ -54,14 +54,11 @@ impl Market {
         let token_ids = self.metadata.get("clobTokenIds");
 
         match token_ids {
-            Some(serde_json::Value::String(s)) => {
-                serde_json::from_str(s).unwrap_or_default()
-            }
-            Some(serde_json::Value::Array(arr)) => {
-                arr.iter()
-                    .filter_map(|v| v.as_str().map(String::from))
-                    .collect()
-            }
+            Some(serde_json::Value::String(s)) => serde_json::from_str(s).unwrap_or_default(),
+            Some(serde_json::Value::Array(arr)) => arr
+                .iter()
+                .filter_map(|v| v.as_str().map(String::from))
+                .collect(),
             _ => vec![],
         }
     }
