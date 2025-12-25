@@ -49,6 +49,34 @@ impl Market {
 
         Some((1.0 - prices.iter().sum::<f64>()).abs())
     }
+
+    pub fn get_token_ids(&self) -> Vec<String> {
+        let token_ids = self.metadata.get("clobTokenIds");
+
+        match token_ids {
+            Some(serde_json::Value::String(s)) => {
+                serde_json::from_str(s).unwrap_or_default()
+            }
+            Some(serde_json::Value::Array(arr)) => {
+                arr.iter()
+                    .filter_map(|v| v.as_str().map(String::from))
+                    .collect()
+            }
+            _ => vec![],
+        }
+    }
+
+    pub fn get_outcome_tokens(&self) -> Vec<OutcomeToken> {
+        let token_ids = self.get_token_ids();
+        self.outcomes
+            .iter()
+            .enumerate()
+            .map(|(i, outcome)| OutcomeToken {
+                outcome: outcome.clone(),
+                token_id: token_ids.get(i).cloned().unwrap_or_default(),
+            })
+            .collect()
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
