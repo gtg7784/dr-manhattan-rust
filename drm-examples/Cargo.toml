@@ -10,6 +10,7 @@ repository.workspace = true
 drm-core = { workspace = true }
 drm-exchange-polymarket = { workspace = true }
 tokio = { workspace = true }
+futures = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 anyhow = { workspace = true }
@@ -17,3 +18,7 @@ anyhow = { workspace = true }
 [[bin]]
 name = "list-markets"
 path = "src/bin/list_markets.rs"
+
+[[bin]]
+name = "watch-orderbook"
+path = "src/bin/watch_orderbook.rs"
