@@ -3,6 +3,8 @@ resolver = "2"
 members = [
     "drm-core",
     "drm-exchange-polymarket",
+    "drm-exchange-opinion",
+    "drm-exchange-limitless",
     "drm-examples",
 ]
 
@@ -22,6 +24,8 @@ futures = "0.3"
 # HTTP & WebSocket
 reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
 tokio-tungstenite = { version = "0.24", features = ["rustls-tls-native-roots"] }
+rust_socketio = { version = "0.6", features = ["async"] }
+tokio-stream = { version = "0.1", features = ["sync"] }
 
 # Serialization
 serde = { version = "1", features = ["derive"] }
@@ -36,6 +40,9 @@ ethers = { version = "2", default-features = false, features = ["ws", "rustls"] 
 
 # Time
 chrono = { version = "0.4", features = ["serde"] }
+
+# Regex
+regex = "1"
 
 # Logging
 tracing = "0.1"
