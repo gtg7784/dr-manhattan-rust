@@ -49,5 +49,5 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # Internal crates
-drm-core = { path = "drm-core" }
-drm-exchange-polymarket = { path = "drm-exchange-polymarket" }
+drm-core = { version = "0.1.0", path = "drm-core" }
+drm-exchange-polymarket = { version = "0.1.0", path = "drm-exchange-polymarket" }
