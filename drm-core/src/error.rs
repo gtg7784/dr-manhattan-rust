@@ -23,6 +23,9 @@ pub enum DrmError {
     #[error("configuration error: {0}")]
     Config(String),
 
+    #[error("invalid input: {0}")]
+    InvalidInput(String),
+
     #[error("{0}")]
     Other(String),
 }
