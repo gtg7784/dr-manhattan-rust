@@ -29,6 +29,7 @@ dr-manhattan-rust/
 ├── drm-exchange-polymarket/     # Polymarket implementation
 ├── drm-exchange-limitless/      # Limitless implementation
 ├── drm-exchange-opinion/        # Opinion implementation
+├── drm-exchange-kalshi/         # Kalshi implementation
 ├── drm-examples/                # Example binaries
 └── Cargo.toml                   # Workspace configuration
 ```
@@ -60,6 +61,7 @@ async fn main() -> anyhow::Result<()> {
 | Polymarket | ✅ Complete | ✅ All endpoints | ✅ Orderbook |
 | Limitless | ✅ Complete | ✅ All endpoints | ✅ Orderbook |
 | Opinion | ✅ Complete | ✅ All endpoints | - |
+| Kalshi | ✅ Complete | ✅ All endpoints | - |
 
 ## Running Examples
 
@@ -134,6 +136,25 @@ let config = OpinionConfig::new()
     .with_private_key("0x...")
     .with_multi_sig_addr("0x...");
 let exchange = Opinion::new(config)?;
+```
+
+### Kalshi
+
+```rust
+use drm_exchange_kalshi::{Kalshi, KalshiConfig};
+
+// Production API
+let config = KalshiConfig::new("your-api-key-id", "/path/to/private-key.pem");
+let exchange = Kalshi::new(config)?;
+
+// Demo environment
+let config = KalshiConfig::demo("your-api-key-id", "/path/to/private-key.pem");
+let exchange = Kalshi::new(config)?;
+
+// With PEM string directly
+let config = KalshiConfig::new("your-api-key-id", "")
+    .with_private_key_pem("-----BEGIN PRIVATE KEY-----\n...");
+let exchange = Kalshi::new(config)?;
 ```
 
 ## API Reference
