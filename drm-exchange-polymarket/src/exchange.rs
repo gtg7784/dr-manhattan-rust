@@ -240,11 +240,7 @@ impl Polymarket {
                         .filter_map(|t| {
                             if let Some(obj) = t.as_object() {
                                 obj.get("token_id").and_then(|v| v.as_str()).map(String::from)
-                            } else if let Some(s) = t.as_str() {
-                                Some(s.to_string())
-                            } else {
-                                None
-                            }
+                            } else { t.as_str().map(|s| s.to_string()) }
                         })
                         .collect();
 
@@ -265,7 +261,7 @@ impl Polymarket {
             }
         }
 
-        Err(PolymarketError::Api(format!("token IDs not found for market {}", condition_id)))
+        Err(PolymarketError::Api(format!("token IDs not found for market {condition_id}")))
     }
 
     pub async fn fetch_price_history(
@@ -286,8 +282,7 @@ impl Polymarket {
         let outcome_idx = outcome.unwrap_or(0);
         if outcome_idx >= token_ids.len() {
             return Err(PolymarketError::Api(format!(
-                "outcome index {} out of range for market {}",
-                outcome_idx, market_id
+                "outcome index {outcome_idx} out of range for market {market_id}"
             )));
         }
 
@@ -310,8 +305,7 @@ impl Polymarket {
             let status = response.status();
             let text = response.text().await.unwrap_or_default();
             return Err(PolymarketError::Api(format!(
-                "fetch price history failed: {} - {}",
-                status, text
+                "fetch price history failed: {status} - {text}"
             )));
         }
 
@@ -359,11 +353,10 @@ impl Polymarket {
         let params = drm_core::FetchMarketsParams {
             active_only: true,
             limit: Some(limit.unwrap_or(100)),
-            ..Default::default()
         };
 
         let markets = self.fetch_markets(Some(params)).await
-            .map_err(|e| PolymarketError::Api(format!("{}", e)))?;
+            .map_err(|e| PolymarketError::Api(format!("{e}")))?;
 
         let query_lower = query.map(|q| q.to_lowercase());
         let min_liq = min_liquidity.unwrap_or(0.0);
@@ -427,21 +420,17 @@ impl Polymarket {
             }
 
             let mut url = format!(
-                "{}/trades?limit={}&offset={}&takerOnly={}",
-                DATA_API_URL,
-                page_limit,
-                current_offset,
-                taker
+                "{DATA_API_URL}/trades?limit={page_limit}&offset={current_offset}&takerOnly={taker}"
             );
 
             if let Some(m) = market {
-                url.push_str(&format!("&market={}", m));
+                url.push_str(&format!("&market={m}"));
             }
             if let Some(u) = user {
-                url.push_str(&format!("&user={}", u));
+                url.push_str(&format!("&user={u}"));
             }
             if let Some(s) = side {
-                url.push_str(&format!("&side={}", s));
+                url.push_str(&format!("&side={s}"));
             }
 
             let response = reqwest::get(&url)
@@ -452,8 +441,7 @@ impl Polymarket {
                 let status = response.status();
                 let text = response.text().await.unwrap_or_default();
                 return Err(PolymarketError::Api(format!(
-                    "fetch public trades failed: {} - {}",
-                    status, text
+                    "fetch public trades failed: {status} - {text}"
                 )));
             }
 
@@ -565,13 +553,13 @@ impl Polymarket {
     pub async fn fetch_positions_for_market(&self, market: &Market) -> Result<Vec<Position>, PolymarketError> {
         self.fetch_positions(Some(&market.id))
             .await
-            .map_err(|e| PolymarketError::Api(format!("{}", e)))
+            .map_err(|e| PolymarketError::Api(format!("{e}")))
     }
 
     pub async fn calculate_nav(&self, market: &Market) -> Result<Nav, PolymarketError> {
         let balances = self.fetch_balance()
             .await
-            .map_err(|e| PolymarketError::Api(format!("{}", e)))?;
+            .map_err(|e| PolymarketError::Api(format!("{e}")))?;
 
         let cash = balances.get("USDC").copied().unwrap_or(0.0);
 
@@ -782,7 +770,7 @@ impl Polymarket {
         if !response.status().is_success() {
             let status = response.status();
             let text = response.text().await.unwrap_or_default();
-            return Err(PolymarketError::Api(format!("get_tag_by_slug failed: {} - {}", status, text)));
+            return Err(PolymarketError::Api(format!("get_tag_by_slug failed: {status} - {text}")));
         }
 
         response.json().await.map_err(|e| PolymarketError::Api(e.to_string()))
@@ -900,10 +888,10 @@ impl Exchange for Polymarket {
             } else {
                 query.push('&');
             }
-            query.push_str(&format!("limit={}", limit));
+            query.push_str(&format!("limit={limit}"));
         }
 
-        let endpoint = format!("/markets{}", query);
+        let endpoint = format!("/markets{query}");
         let data: Vec<serde_json::Value> = self
             .client
             .get_gamma(&endpoint)
@@ -921,7 +909,7 @@ impl Exchange for Polymarket {
     async fn fetch_market(&self, market_id: &str) -> Result<Market, DrmError> {
         self.rate_limit().await;
 
-        let endpoint = format!("/markets/{}", market_id);
+        let endpoint = format!("/markets/{market_id}");
         let data: serde_json::Value = self
             .client
             .get_gamma(&endpoint)
@@ -946,7 +934,7 @@ impl Exchange for Polymarket {
             slug
         };
 
-        let endpoint = format!("/events?slug={}", slug);
+        let endpoint = format!("/events?slug={slug}");
         let events: Vec<serde_json::Value> = self
             .client
             .get_gamma(&endpoint)
@@ -995,7 +983,7 @@ impl Exchange for Polymarket {
             })?;
 
         let token_id = params.get("token_id").cloned().unwrap_or_else(|| {
-            format!("{}:{}", market_id, outcome)
+            format!("{market_id}:{outcome}")
         });
 
         let order_type_str = params.get("order_type").map(|s| s.as_str()).unwrap_or("GTC");

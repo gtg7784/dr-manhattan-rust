@@ -73,7 +73,7 @@ impl OrderTracker {
             } else {
                 &order_id
             };
-            println!("Tracking order {}...", id_preview);
+            println!("Tracking order {id_preview}...");
         }
 
         tracked.insert(order_id, TrackedOrder::new(order));

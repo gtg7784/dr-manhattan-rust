@@ -184,7 +184,7 @@ impl Limitless {
             map.get(market_slug_or_token_id).cloned().unwrap_or_else(|| market_slug_or_token_id.to_string())
         };
 
-        let endpoint = format!("/markets/{}/orderbook", slug);
+        let endpoint = format!("/markets/{slug}/orderbook");
         let data: serde_json::Value = self.get(&endpoint).await?;
 
         let mut bids: Vec<drm_core::PriceLevel> = vec![];
@@ -282,10 +282,10 @@ impl Limitless {
         );
 
         if let Some(from) = start_from {
-            endpoint.push_str(&format!("&from={}", from));
+            endpoint.push_str(&format!("&from={from}"));
         }
         if let Some(to) = end_to {
-            endpoint.push_str(&format!("&to={}", to));
+            endpoint.push_str(&format!("&to={to}"));
         }
 
         let data: serde_json::Value = self.get(&endpoint).await?;
@@ -338,11 +338,10 @@ impl Limitless {
         let params = FetchMarketsParams {
             active_only: true,
             limit: Some(limit.unwrap_or(25).min(25)),
-            ..Default::default()
         };
 
         let markets = self.fetch_markets(Some(params)).await
-            .map_err(|e| LimitlessError::Api(format!("{}", e)))?;
+            .map_err(|e| LimitlessError::Api(format!("{e}")))?;
 
         let query_lower = query.map(|q| q.to_lowercase());
         let min_liq = min_liquidity.unwrap_or(0.0);
@@ -388,13 +387,13 @@ impl Limitless {
     pub async fn fetch_positions_for_market(&self, market: &Market) -> Result<Vec<Position>, LimitlessError> {
         self.fetch_positions(Some(&market.id))
             .await
-            .map_err(|e| LimitlessError::Api(format!("{}", e)))
+            .map_err(|e| LimitlessError::Api(format!("{e}")))
     }
 
     pub async fn fetch_token_ids(&self, market_id: &str) -> Result<Vec<String>, LimitlessError> {
         let market = self.fetch_market(market_id)
             .await
-            .map_err(|e| LimitlessError::Api(format!("{}", e)))?;
+            .map_err(|e| LimitlessError::Api(format!("{e}")))?;
 
         let token_ids: Vec<String> = market
             .metadata
@@ -411,7 +410,7 @@ impl Limitless {
             .unwrap_or_default();
 
         if token_ids.is_empty() {
-            return Err(LimitlessError::Api(format!("no token IDs found for market {}", market_id)));
+            return Err(LimitlessError::Api(format!("no token IDs found for market {market_id}")));
         }
 
         Ok(token_ids)
@@ -420,7 +419,7 @@ impl Limitless {
     pub async fn calculate_nav(&self, market: &Market) -> Result<Nav, LimitlessError> {
         let balances = self.fetch_balance()
             .await
-            .map_err(|e| LimitlessError::Api(format!("{}", e)))?;
+            .map_err(|e| LimitlessError::Api(format!("{e}")))?;
 
         let cash = balances.get("USDC").copied().unwrap_or(0.0);
 
@@ -439,8 +438,7 @@ impl Limitless {
         let limit = limit.unwrap_or(20);
 
         let endpoint = format!(
-            "/markets/{}/get-feed-events?page={}&limit={}",
-            market_slug, page, limit
+            "/markets/{market_slug}/get-feed-events?page={page}&limit={limit}"
         );
 
         let data: serde_json::Value = self.get(&endpoint).await?;
@@ -470,8 +468,7 @@ impl Limitless {
         let limit = limit.unwrap_or(20);
 
         let endpoint = format!(
-            "/markets/{}/events?page={}&limit={}",
-            market_slug, page, limit
+            "/markets/{market_slug}/events?page={page}&limit={limit}"
         );
 
         let data: serde_json::Value = self.get(&endpoint).await?;
@@ -518,9 +515,9 @@ impl Exchange for Limitless {
         let mut query = String::new();
 
         let limit = params.limit.unwrap_or(25).min(25);
-        query.push_str(&format!("?limit={}", limit));
+        query.push_str(&format!("?limit={limit}"));
 
-        let endpoint = format!("/markets/active{}", query);
+        let endpoint = format!("/markets/active{query}");
         let data: serde_json::Value = self
             .get(&endpoint)
             .await
@@ -551,7 +548,7 @@ impl Exchange for Limitless {
     }
 
     async fn fetch_market(&self, market_id: &str) -> Result<Market, DrmError> {
-        let endpoint = format!("/markets/{}", market_id);
+        let endpoint = format!("/markets/{market_id}");
         let data: serde_json::Value = self
             .get(&endpoint)
             .await
@@ -589,10 +586,10 @@ impl Exchange for Limitless {
 
         let token_id = params.get("token_id").cloned().or_else(|| {
             tokens.get(outcome).and_then(|v| v.as_str()).map(|s| s.to_string())
-        }).ok_or_else(|| DrmError::Exchange(drm_core::ExchangeError::InvalidOrder(format!("no token_id for outcome {}", outcome))))?;
+        }).ok_or_else(|| DrmError::Exchange(drm_core::ExchangeError::InvalidOrder(format!("no token_id for outcome {outcome}"))))?;
 
         if price <= 0.0 || price >= 1.0 {
-            return Err(DrmError::Exchange(drm_core::ExchangeError::InvalidOrder(format!("price must be between 0 and 1, got {}", price))));
+            return Err(DrmError::Exchange(drm_core::ExchangeError::InvalidOrder(format!("price must be between 0 and 1, got {price}"))));
         }
 
         let exchange_address = market.metadata

@@ -405,16 +405,13 @@ impl OrderBookWebSocket for LimitlessWebSocket {
         let sender = shared
             .orderbook_senders
             .get(market_id)
-            .ok_or_else(|| WebSocketError::Subscription(format!("not subscribed to {}", market_id)))?;
+            .ok_or_else(|| WebSocketError::Subscription(format!("not subscribed to {market_id}")))?;
 
         let rx = sender.subscribe();
 
         Ok(Box::pin(
             tokio_stream::wrappers::BroadcastStream::new(rx).filter_map(|result| async move {
-                match result {
-                    Ok(ob) => Some(ob),
-                    Err(_) => None,
-                }
+                result.ok()
             }),
         ))
     }

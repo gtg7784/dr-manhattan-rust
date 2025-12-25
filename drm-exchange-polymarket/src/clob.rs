@@ -114,7 +114,7 @@ impl ClobClient {
     pub fn new(private_key: &str, funder: Option<&str>) -> Result<Self, PolymarketError> {
         let wallet: LocalWallet = private_key
             .parse()
-            .map_err(|e| PolymarketError::Config(format!("invalid private key: {}", e)))?;
+            .map_err(|e| PolymarketError::Config(format!("invalid private key: {e}")))?;
 
         let wallet = wallet.with_chain_id(CHAIN_ID);
         let address = wallet.address();
@@ -122,7 +122,7 @@ impl ClobClient {
         let funder = funder
             .map(|f| f.parse::<Address>())
             .transpose()
-            .map_err(|e| PolymarketError::Config(format!("invalid funder address: {}", e)))?;
+            .map_err(|e| PolymarketError::Config(format!("invalid funder address: {e}")))?;
 
         Ok(Self {
             http: reqwest::Client::new(),
@@ -139,14 +139,14 @@ impl ClobClient {
 
     pub async fn derive_api_credentials(&mut self) -> Result<ApiCredentials, PolymarketError> {
         let nonce = chrono::Utc::now().timestamp_millis();
-        let message = format!("I am signing this nonce: {}", nonce);
+        let message = format!("I am signing this nonce: {nonce}");
         let signature = self
             .wallet
             .sign_message(&message)
             .await
-            .map_err(|e| PolymarketError::Signing(format!("signing failed: {}", e)))?;
+            .map_err(|e| PolymarketError::Signing(format!("signing failed: {e}")))?;
 
-        let url = format!("{}/auth/derive-api-key", CLOB_URL);
+        let url = format!("{CLOB_URL}/auth/derive-api-key");
         let response = self
             .http
             .get(&url)
@@ -162,15 +162,14 @@ impl ClobClient {
             let status = response.status();
             let text = response.text().await.unwrap_or_default();
             return Err(PolymarketError::Api(format!(
-                "derive credentials failed: {} - {}",
-                status, text
+                "derive credentials failed: {status} - {text}"
             )));
         }
 
         let creds: ApiCredentials = response
             .json()
             .await
-            .map_err(|e| PolymarketError::Api(format!("parse credentials failed: {}", e)))?;
+            .map_err(|e| PolymarketError::Api(format!("parse credentials failed: {e}")))?;
 
         self.api_creds = Some(creds.clone());
         Ok(creds)
@@ -207,7 +206,7 @@ impl ClobClient {
         };
 
         let token_id = U256::from_dec_str(&args.token_id)
-            .map_err(|e| PolymarketError::Config(format!("invalid token_id: {}", e)))?;
+            .map_err(|e| PolymarketError::Config(format!("invalid token_id: {e}")))?;
 
         let order_hash = self.compute_order_hash(
             U256::from(salt),
@@ -227,7 +226,7 @@ impl ClobClient {
         let signature = self
             .wallet
             .sign_hash(order_hash.into())
-            .map_err(|e| PolymarketError::Signing(format!("signing failed: {}", e)))?;
+            .map_err(|e| PolymarketError::Signing(format!("signing failed: {e}")))?;
 
         Ok(SignedOrder {
             salt: salt.to_string(),
@@ -246,6 +245,7 @@ impl ClobClient {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn compute_order_hash(
         &self,
         salt: U256,
@@ -333,12 +333,12 @@ impl ClobClient {
 
         let timestamp = chrono::Utc::now().timestamp_millis().to_string();
         let body = serde_json::to_string(&request)
-            .map_err(|e| PolymarketError::Api(format!("serialize failed: {}", e)))?;
+            .map_err(|e| PolymarketError::Api(format!("serialize failed: {e}")))?;
 
-        let sig_payload = format!("POST\n/order\n{}\n{}", timestamp, body);
+        let sig_payload = format!("POST\n/order\n{timestamp}\n{body}");
         let hmac_sig = self.sign_hmac(&sig_payload, &creds.secret)?;
 
-        let url = format!("{}/order", CLOB_URL);
+        let url = format!("{CLOB_URL}/order");
         let response = self
             .http
             .post(&url)
@@ -357,15 +357,14 @@ impl ClobClient {
             let status = response.status();
             let text = response.text().await.unwrap_or_default();
             return Err(PolymarketError::Api(format!(
-                "post order failed: {} - {}",
-                status, text
+                "post order failed: {status} - {text}"
             )));
         }
 
         response
             .json()
             .await
-            .map_err(|e| PolymarketError::Api(format!("parse response failed: {}", e)))
+            .map_err(|e| PolymarketError::Api(format!("parse response failed: {e}")))
     }
 
     pub async fn cancel_order(&self, order_id: &str) -> Result<(), PolymarketError> {
@@ -375,10 +374,10 @@ impl ClobClient {
             .ok_or_else(|| PolymarketError::Auth("API credentials not set".into()))?;
 
         let timestamp = chrono::Utc::now().timestamp_millis().to_string();
-        let sig_payload = format!("DELETE\n/order/{}\n{}\n", order_id, timestamp);
+        let sig_payload = format!("DELETE\n/order/{order_id}\n{timestamp}\n");
         let hmac_sig = self.sign_hmac(&sig_payload, &creds.secret)?;
 
-        let url = format!("{}/order/{}", CLOB_URL, order_id);
+        let url = format!("{CLOB_URL}/order/{order_id}");
         let response = self
             .http
             .delete(&url)
@@ -395,8 +394,7 @@ impl ClobClient {
             let status = response.status();
             let text = response.text().await.unwrap_or_default();
             return Err(PolymarketError::Api(format!(
-                "cancel order failed: {} - {}",
-                status, text
+                "cancel order failed: {status} - {text}"
             )));
         }
 
@@ -410,10 +408,10 @@ impl ClobClient {
             .ok_or_else(|| PolymarketError::Auth("API credentials not set".into()))?;
 
         let timestamp = chrono::Utc::now().timestamp_millis().to_string();
-        let sig_payload = format!("GET\n/order/{}\n{}\n", order_id, timestamp);
+        let sig_payload = format!("GET\n/order/{order_id}\n{timestamp}\n");
         let hmac_sig = self.sign_hmac(&sig_payload, &creds.secret)?;
 
-        let url = format!("{}/order/{}", CLOB_URL, order_id);
+        let url = format!("{CLOB_URL}/order/{order_id}");
         let response = self
             .http
             .get(&url)
@@ -430,15 +428,14 @@ impl ClobClient {
             let status = response.status();
             let text = response.text().await.unwrap_or_default();
             return Err(PolymarketError::Api(format!(
-                "get order failed: {} - {}",
-                status, text
+                "get order failed: {status} - {text}"
             )));
         }
 
         response
             .json()
             .await
-            .map_err(|e| PolymarketError::Api(format!("parse order failed: {}", e)))
+            .map_err(|e| PolymarketError::Api(format!("parse order failed: {e}")))
     }
 
     pub async fn get_open_orders(&self) -> Result<Vec<ClobOrderData>, PolymarketError> {
@@ -448,10 +445,10 @@ impl ClobClient {
             .ok_or_else(|| PolymarketError::Auth("API credentials not set".into()))?;
 
         let timestamp = chrono::Utc::now().timestamp_millis().to_string();
-        let sig_payload = format!("GET\n/orders\n{}\n", timestamp);
+        let sig_payload = format!("GET\n/orders\n{timestamp}\n");
         let hmac_sig = self.sign_hmac(&sig_payload, &creds.secret)?;
 
-        let url = format!("{}/orders", CLOB_URL);
+        let url = format!("{CLOB_URL}/orders");
         let response = self
             .http
             .get(&url)
@@ -468,15 +465,14 @@ impl ClobClient {
             let status = response.status();
             let text = response.text().await.unwrap_or_default();
             return Err(PolymarketError::Api(format!(
-                "get open orders failed: {} - {}",
-                status, text
+                "get open orders failed: {status} - {text}"
             )));
         }
 
         response
             .json()
             .await
-            .map_err(|e| PolymarketError::Api(format!("parse orders failed: {}", e)))
+            .map_err(|e| PolymarketError::Api(format!("parse orders failed: {e}")))
     }
 
     pub async fn get_balance_allowance(&self) -> Result<BalanceAllowance, PolymarketError> {
@@ -486,10 +482,10 @@ impl ClobClient {
             .ok_or_else(|| PolymarketError::Auth("API credentials not set".into()))?;
 
         let timestamp = chrono::Utc::now().timestamp_millis().to_string();
-        let sig_payload = format!("GET\n/balance-allowance?asset_type=COLLATERAL\n{}\n", timestamp);
+        let sig_payload = format!("GET\n/balance-allowance?asset_type=COLLATERAL\n{timestamp}\n");
         let hmac_sig = self.sign_hmac(&sig_payload, &creds.secret)?;
 
-        let url = format!("{}/balance-allowance?asset_type=COLLATERAL", CLOB_URL);
+        let url = format!("{CLOB_URL}/balance-allowance?asset_type=COLLATERAL");
         let response = self
             .http
             .get(&url)
@@ -506,15 +502,14 @@ impl ClobClient {
             let status = response.status();
             let text = response.text().await.unwrap_or_default();
             return Err(PolymarketError::Api(format!(
-                "get balance failed: {} - {}",
-                status, text
+                "get balance failed: {status} - {text}"
             )));
         }
 
         response
             .json()
             .await
-            .map_err(|e| PolymarketError::Api(format!("parse balance failed: {}", e)))
+            .map_err(|e| PolymarketError::Api(format!("parse balance failed: {e}")))
     }
 
     pub async fn get_token_balance(&self, token_id: &str) -> Result<f64, PolymarketError> {
@@ -524,11 +519,11 @@ impl ClobClient {
             .ok_or_else(|| PolymarketError::Auth("API credentials not set".into()))?;
 
         let timestamp = chrono::Utc::now().timestamp_millis().to_string();
-        let query = format!("asset_type=CONDITIONAL&token_id={}", token_id);
-        let sig_payload = format!("GET\n/balance-allowance?{}\n{}\n", query, timestamp);
+        let query = format!("asset_type=CONDITIONAL&token_id={token_id}");
+        let sig_payload = format!("GET\n/balance-allowance?{query}\n{timestamp}\n");
         let hmac_sig = self.sign_hmac(&sig_payload, &creds.secret)?;
 
-        let url = format!("{}/balance-allowance?{}", CLOB_URL, query);
+        let url = format!("{CLOB_URL}/balance-allowance?{query}");
         let response = self
             .http
             .get(&url)
@@ -548,7 +543,7 @@ impl ClobClient {
         let data: BalanceAllowance = response
             .json()
             .await
-            .map_err(|e| PolymarketError::Api(format!("parse token balance failed: {}", e)))?;
+            .map_err(|e| PolymarketError::Api(format!("parse token balance failed: {e}")))?;
 
         let balance = data
             .balance
@@ -566,10 +561,10 @@ impl ClobClient {
 
         let secret_bytes = STANDARD
             .decode(secret)
-            .map_err(|e| PolymarketError::Signing(format!("decode secret failed: {}", e)))?;
+            .map_err(|e| PolymarketError::Signing(format!("decode secret failed: {e}")))?;
 
         let mut mac = Hmac::<Sha256>::new_from_slice(&secret_bytes)
-            .map_err(|e| PolymarketError::Signing(format!("hmac init failed: {}", e)))?;
+            .map_err(|e| PolymarketError::Signing(format!("hmac init failed: {e}")))?;
 
         mac.update(payload.as_bytes());
         let result = mac.finalize();

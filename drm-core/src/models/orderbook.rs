@@ -132,7 +132,7 @@ impl OrderbookManager {
     }
 
     pub fn has_data(&self, token_id: &str) -> bool {
-        self.get(token_id).map_or(false, |ob| ob.has_data())
+        self.get(token_id).is_some_and(|ob| ob.has_data())
     }
 
     pub fn has_all_data(&self, token_ids: &[&str]) -> bool {

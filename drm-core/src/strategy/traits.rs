@@ -248,12 +248,12 @@ impl<E: Exchange + 'static> BaseStrategy<E> {
             }
 
             if let Err(e) = self.refresh_state().await {
-                self.log(&format!("Failed to refresh state: {}", e));
+                self.log(&format!("Failed to refresh state: {e}"));
                 let _ = self.event_tx.send(StrategyEvent::Error(e.to_string()));
             }
 
             if let Err(e) = on_tick(self).await {
-                self.log(&format!("Tick error: {}", e));
+                self.log(&format!("Tick error: {e}"));
                 let _ = self.event_tx.send(StrategyEvent::Error(e.to_string()));
             } else {
                 let _ = self.event_tx.send(StrategyEvent::Tick);
@@ -291,7 +291,7 @@ impl<E: Exchange + 'static> BaseStrategy<E> {
 
         if self.config.verbose {
             let usdc_balance = balance.get("USDC").copied().unwrap_or(0.0);
-            self.log(&format!("USDC Balance: ${:.2}", usdc_balance));
+            self.log(&format!("USDC Balance: ${usdc_balance:.2}"));
             self.log(&format!("Positions: {} open", positions.len()));
             for pos in &positions {
                 self.log(&format!(

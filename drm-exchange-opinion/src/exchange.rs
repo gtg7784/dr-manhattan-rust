@@ -59,7 +59,7 @@ impl Opinion {
     fn auth_headers(&self, builder: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
         let mut b = builder;
         if let Some(ref api_key) = self.config.api_key {
-            b = b.header("Authorization", format!("Bearer {}", api_key));
+            b = b.header("Authorization", format!("Bearer {api_key}"));
             b = b.header("X-API-Key", api_key);
         }
         b
@@ -183,8 +183,7 @@ impl Opinion {
             .or_else(|| obj.get("cutoff_time"))
             .and_then(|v| v.as_i64())
             .filter(|&t| t > 0)
-            .map(|t| chrono::DateTime::from_timestamp(t, 0))
-            .flatten();
+            .and_then(|t| chrono::DateTime::from_timestamp(t, 0));
 
         let description = obj
             .get("description")
@@ -352,7 +351,7 @@ impl Opinion {
     }
 
     pub async fn get_orderbook(&self, token_id: &str) -> Result<Orderbook, OpinionError> {
-        let endpoint = format!("/api/v1/orderbook?token_id={}", token_id);
+        let endpoint = format!("/api/v1/orderbook?token_id={token_id}");
         let resp: ApiResponse<serde_json::Value> = self.get(&endpoint).await?;
 
         let mut bids = Vec::new();
@@ -466,10 +465,10 @@ impl Opinion {
         );
 
         if let Some(start) = start_at {
-            endpoint.push_str(&format!("&start_at={}", start));
+            endpoint.push_str(&format!("&start_at={start}"));
         }
         if let Some(end) = end_at {
-            endpoint.push_str(&format!("&end_at={}", end));
+            endpoint.push_str(&format!("&end_at={end}"));
         }
 
         let resp: ApiResponse<serde_json::Value> = self.get(&endpoint).await?;
@@ -516,11 +515,10 @@ impl Opinion {
         let params = drm_core::FetchMarketsParams {
             active_only: true,
             limit: Some(limit.unwrap_or(20).min(20)),
-            ..Default::default()
         };
 
         let markets = self.fetch_markets(Some(params)).await
-            .map_err(|e| OpinionError::Api(format!("{}", e)))?;
+            .map_err(|e| OpinionError::Api(format!("{e}")))?;
 
         let query_lower = query.map(|q| q.to_lowercase());
         let min_liq = min_liquidity.unwrap_or(0.0);
@@ -595,13 +593,13 @@ impl Opinion {
         self.ensure_auth()?;
         self.fetch_positions(Some(&market.id))
             .await
-            .map_err(|e| OpinionError::Api(format!("{}", e)))
+            .map_err(|e| OpinionError::Api(format!("{e}")))
     }
 
     pub async fn fetch_token_ids(&self, market_id: &str) -> Result<Vec<String>, OpinionError> {
         let market = self.fetch_market(market_id)
             .await
-            .map_err(|e| OpinionError::Api(format!("{}", e)))?;
+            .map_err(|e| OpinionError::Api(format!("{e}")))?;
 
         let token_ids: Vec<String> = market
             .metadata
@@ -618,7 +616,7 @@ impl Opinion {
             .unwrap_or_default();
 
         if token_ids.is_empty() {
-            return Err(OpinionError::Api(format!("no token IDs found for market {}", market_id)));
+            return Err(OpinionError::Api(format!("no token IDs found for market {market_id}")));
         }
 
         Ok(token_ids)
@@ -627,7 +625,7 @@ impl Opinion {
     pub async fn calculate_nav(&self, market: &Market) -> Result<Nav, OpinionError> {
         let balances = self.fetch_balance()
             .await
-            .map_err(|e| OpinionError::Api(format!("{}", e)))?;
+            .map_err(|e| OpinionError::Api(format!("{e}")))?;
 
         let cash = balances.get("USDC").copied().unwrap_or(0.0);
 
@@ -668,8 +666,7 @@ impl Exchange for Opinion {
         let page = 1;
 
         let endpoint = format!(
-            "/api/v1/markets?topic_type=ALL&status={}&page={}&limit={}",
-            status, page, limit
+            "/api/v1/markets?topic_type=ALL&status={status}&page={page}&limit={limit}"
         );
 
         let resp: ApiResponse<serde_json::Value> = self
@@ -697,7 +694,7 @@ impl Exchange for Opinion {
     }
 
     async fn fetch_market(&self, market_id: &str) -> Result<Market, DrmError> {
-        let endpoint = format!("/api/v1/markets/{}", market_id);
+        let endpoint = format!("/api/v1/markets/{market_id}");
         let resp: ApiResponse<serde_json::Value> = self
             .get(&endpoint)
             .await
@@ -716,7 +713,7 @@ impl Exchange for Opinion {
     }
 
     async fn fetch_markets_by_slug(&self, slug: &str) -> Result<Vec<Market>, DrmError> {
-        let endpoint = format!("/api/v1/markets?slug={}", slug);
+        let endpoint = format!("/api/v1/markets?slug={slug}");
         let resp: ApiResponse<serde_json::Value> = self
             .get(&endpoint)
             .await
@@ -809,7 +806,7 @@ impl Exchange for Opinion {
     ) -> Result<Order, DrmError> {
         self.ensure_auth().map_err(|e| DrmError::Exchange(e.into()))?;
 
-        let endpoint = format!("/api/v1/orders/{}/cancel", order_id);
+        let endpoint = format!("/api/v1/orders/{order_id}/cancel");
         let resp: ApiResponse<serde_json::Value> = self
             .post(&endpoint, &serde_json::json!({}))
             .await
@@ -842,7 +839,7 @@ impl Exchange for Opinion {
     ) -> Result<Order, DrmError> {
         self.ensure_auth().map_err(|e| DrmError::Exchange(e.into()))?;
 
-        let endpoint = format!("/api/v1/orders/{}", order_id);
+        let endpoint = format!("/api/v1/orders/{order_id}");
         let resp: ApiResponse<serde_json::Value> = self
             .get(&endpoint)
             .await
@@ -850,7 +847,7 @@ impl Exchange for Opinion {
 
         if resp.errno != 0 {
             return Err(DrmError::Exchange(drm_core::ExchangeError::Api(
-                format!("Order {} not found", order_id),
+                format!("Order {order_id} not found"),
             )));
         }
 

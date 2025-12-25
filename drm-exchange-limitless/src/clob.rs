@@ -171,7 +171,7 @@ impl LimitlessClobClient {
     pub fn new(private_key: &str, host: &str) -> Result<Self, LimitlessError> {
         let wallet: LocalWallet = private_key
             .parse()
-            .map_err(|e| LimitlessError::Auth(format!("invalid private key: {}", e)))?;
+            .map_err(|e| LimitlessError::Auth(format!("invalid private key: {e}")))?;
 
         let wallet = wallet.with_chain_id(CHAIN_ID);
         let address = wallet.address();
@@ -213,7 +213,7 @@ impl LimitlessClobClient {
             .get(&url)
             .send()
             .await
-            .map_err(|e| LimitlessError::Http(e))?;
+            .map_err(LimitlessError::Http)?;
 
         if !response.status().is_success() {
             return Err(LimitlessError::Auth("failed to get signing message".into()));
@@ -222,7 +222,7 @@ impl LimitlessClobClient {
         let message = response
             .text()
             .await
-            .map_err(|e| LimitlessError::Http(e))?
+            .map_err(LimitlessError::Http)?
             .trim()
             .to_string();
 
@@ -235,7 +235,7 @@ impl LimitlessClobClient {
             .wallet
             .sign_message(&message)
             .await
-            .map_err(|e| LimitlessError::Auth(format!("signing failed: {}", e)))?;
+            .map_err(|e| LimitlessError::Auth(format!("signing failed: {e}")))?;
 
         let sig_hex = format!("0x{}", hex::encode(signature.to_vec()));
         let message_hex = format!("0x{}", hex::encode(message.as_bytes()));
@@ -251,11 +251,11 @@ impl LimitlessClobClient {
             .json(&serde_json::json!({"client": "eoa"}))
             .send()
             .await
-            .map_err(|e| LimitlessError::Http(e))?;
+            .map_err(LimitlessError::Http)?;
 
         if !login_response.status().is_success() {
             let text = login_response.text().await.unwrap_or_default();
-            return Err(LimitlessError::Auth(format!("login failed: {}", text)));
+            return Err(LimitlessError::Auth(format!("login failed: {text}")));
         }
 
         // Extract owner ID
@@ -286,6 +286,7 @@ impl LimitlessClobClient {
     }
 
     /// Build and sign an order
+    #[allow(clippy::too_many_arguments)]
     pub fn build_signed_order(
         &self,
         token_id: &str,
@@ -324,7 +325,7 @@ impl LimitlessClobClient {
         let (maker_amount, taker_amount) = match side {
             LimitlessSide::Buy => {
                 // BUY: Round UP
-                let collateral = ((numerator + denominator - 1) / denominator) as u64;
+                let collateral = numerator.div_ceil(denominator) as u64;
                 (collateral, shares)
             }
             LimitlessSide::Sell => {
@@ -335,7 +336,7 @@ impl LimitlessClobClient {
         };
 
         let token_id_u256 = U256::from_dec_str(token_id)
-            .map_err(|e| LimitlessError::Api(format!("invalid token_id: {}", e)))?;
+            .map_err(|e| LimitlessError::Api(format!("invalid token_id: {e}")))?;
 
         // Compute order hash
         let order_hash = self.compute_order_hash(
@@ -358,7 +359,7 @@ impl LimitlessClobClient {
         let signature = self
             .wallet
             .sign_hash(order_hash.into())
-            .map_err(|e| LimitlessError::Auth(format!("signing failed: {}", e)))?;
+            .map_err(|e| LimitlessError::Auth(format!("signing failed: {e}")))?;
 
         let mut order = SignedOrder {
             salt,
@@ -385,6 +386,7 @@ impl LimitlessClobClient {
         Ok(order)
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn compute_order_hash(
         &self,
         salt: U256,
@@ -475,7 +477,7 @@ impl LimitlessClobClient {
             .json(&request)
             .send()
             .await
-            .map_err(|e| LimitlessError::Http(e))?;
+            .map_err(LimitlessError::Http)?;
 
         if response.status() == 429 {
             return Err(LimitlessError::RateLimited);
@@ -483,13 +485,13 @@ impl LimitlessClobClient {
 
         if !response.status().is_success() {
             let text = response.text().await.unwrap_or_default();
-            return Err(LimitlessError::Api(format!("post order failed: {}", text)));
+            return Err(LimitlessError::Api(format!("post order failed: {text}")));
         }
 
         response
             .json()
             .await
-            .map_err(|e| LimitlessError::Api(format!("parse response failed: {}", e)))
+            .map_err(|e| LimitlessError::Api(format!("parse response failed: {e}")))
     }
 
     /// Cancel an order
@@ -504,11 +506,11 @@ impl LimitlessClobClient {
             .delete(&url)
             .send()
             .await
-            .map_err(|e| LimitlessError::Http(e))?;
+            .map_err(LimitlessError::Http)?;
 
         if !response.status().is_success() {
             let text = response.text().await.unwrap_or_default();
-            return Err(LimitlessError::Api(format!("cancel order failed: {}", text)));
+            return Err(LimitlessError::Api(format!("cancel order failed: {text}")));
         }
 
         Ok(())
@@ -526,11 +528,11 @@ impl LimitlessClobClient {
             .delete(&url)
             .send()
             .await
-            .map_err(|e| LimitlessError::Http(e))?;
+            .map_err(LimitlessError::Http)?;
 
         if !response.status().is_success() {
             let text = response.text().await.unwrap_or_default();
-            return Err(LimitlessError::Api(format!("cancel all orders failed: {}", text)));
+            return Err(LimitlessError::Api(format!("cancel all orders failed: {text}")));
         }
 
         Ok(())
@@ -548,17 +550,17 @@ impl LimitlessClobClient {
             .get(&url)
             .send()
             .await
-            .map_err(|e| LimitlessError::Http(e))?;
+            .map_err(LimitlessError::Http)?;
 
         if !response.status().is_success() {
             let text = response.text().await.unwrap_or_default();
-            return Err(LimitlessError::Api(format!("get order failed: {}", text)));
+            return Err(LimitlessError::Api(format!("get order failed: {text}")));
         }
 
         response
             .json()
             .await
-            .map_err(|e| LimitlessError::Api(format!("parse order failed: {}", e)))
+            .map_err(|e| LimitlessError::Api(format!("parse order failed: {e}")))
     }
 
     /// Get open orders
@@ -572,7 +574,7 @@ impl LimitlessClobClient {
 
         let mut url = format!("{}/orders", self.host);
         if let Some(slug) = market_slug {
-            url.push_str(&format!("?marketSlug={}", slug));
+            url.push_str(&format!("?marketSlug={slug}"));
         }
 
         let response = self
@@ -580,18 +582,18 @@ impl LimitlessClobClient {
             .get(&url)
             .send()
             .await
-            .map_err(|e| LimitlessError::Http(e))?;
+            .map_err(LimitlessError::Http)?;
 
         if !response.status().is_success() {
             let text = response.text().await.unwrap_or_default();
-            return Err(LimitlessError::Api(format!("get orders failed: {}", text)));
+            return Err(LimitlessError::Api(format!("get orders failed: {text}")));
         }
 
         // Response may be { "data": [...] } or just [...]
         let data: serde_json::Value = response
             .json()
             .await
-            .map_err(|e| LimitlessError::Api(format!("parse orders failed: {}", e)))?;
+            .map_err(|e| LimitlessError::Api(format!("parse orders failed: {e}")))?;
 
         let orders_arr = data
             .get("data")
@@ -620,7 +622,7 @@ impl LimitlessClobClient {
 
         let mut url = format!("{}/positions", self.host);
         if let Some(slug) = market_slug {
-            url.push_str(&format!("?marketSlug={}", slug));
+            url.push_str(&format!("?marketSlug={slug}"));
         }
 
         let response = self
@@ -628,17 +630,17 @@ impl LimitlessClobClient {
             .get(&url)
             .send()
             .await
-            .map_err(|e| LimitlessError::Http(e))?;
+            .map_err(LimitlessError::Http)?;
 
         if !response.status().is_success() {
             let text = response.text().await.unwrap_or_default();
-            return Err(LimitlessError::Api(format!("get positions failed: {}", text)));
+            return Err(LimitlessError::Api(format!("get positions failed: {text}")));
         }
 
         let data: serde_json::Value = response
             .json()
             .await
-            .map_err(|e| LimitlessError::Api(format!("parse positions failed: {}", e)))?;
+            .map_err(|e| LimitlessError::Api(format!("parse positions failed: {e}")))?;
 
         let positions_arr = data
             .get("data")
@@ -668,16 +670,16 @@ impl LimitlessClobClient {
             .get(&url)
             .send()
             .await
-            .map_err(|e| LimitlessError::Http(e))?;
+            .map_err(LimitlessError::Http)?;
 
         if !response.status().is_success() {
             let text = response.text().await.unwrap_or_default();
-            return Err(LimitlessError::Api(format!("get balance failed: {}", text)));
+            return Err(LimitlessError::Api(format!("get balance failed: {text}")));
         }
 
         response
             .json()
             .await
-            .map_err(|e| LimitlessError::Api(format!("parse balance failed: {}", e)))
+            .map_err(|e| LimitlessError::Api(format!("parse balance failed: {e}")))
     }
 }

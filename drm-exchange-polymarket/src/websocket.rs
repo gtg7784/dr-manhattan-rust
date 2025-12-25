@@ -104,7 +104,7 @@ impl PolymarketWebSocket {
         if let Some(ref sender) = *tx {
             sender
                 .unbounded_send(Message::Text(msg.into()))
-                .map_err(|e| WebSocketError::Connection(format!("send failed: {}", e)))?;
+                .map_err(|e| WebSocketError::Connection(format!("send failed: {e}")))?;
         }
         Ok(())
     }
@@ -514,16 +514,13 @@ impl OrderBookWebSocket for PolymarketWebSocket {
         let senders = self.orderbook_senders.read().await;
         let sender = senders
             .get(market_id)
-            .ok_or_else(|| WebSocketError::Subscription(format!("not subscribed to {}", market_id)))?;
+            .ok_or_else(|| WebSocketError::Subscription(format!("not subscribed to {market_id}")))?;
 
         let rx = sender.subscribe();
 
         Ok(Box::pin(tokio_stream::wrappers::BroadcastStream::new(rx).filter_map(
             |result| async move {
-                match result {
-                    Ok(ob) => Some(ob),
-                    Err(_) => None,
-                }
+                result.ok()
             },
         )))
     }

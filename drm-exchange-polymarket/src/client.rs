@@ -61,7 +61,7 @@ impl HttpClient {
 
         if !status.is_success() {
             let message = response.text().await.unwrap_or_default();
-            return Err(PolymarketError::Api(format!("{}: {}", status, message)));
+            return Err(PolymarketError::Api(format!("{status}: {message}")));
         }
 
         let body = response.json().await?;

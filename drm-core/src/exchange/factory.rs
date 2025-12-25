@@ -1,4 +1,5 @@
 use std::env;
+use std::str::FromStr;
 
 use crate::error::DrmError;
 
@@ -17,16 +18,22 @@ impl ExchangeId {
             ExchangeId::Limitless => "limitless",
         }
     }
+}
 
-    pub fn from_str(s: &str) -> Option<Self> {
+impl FromStr for ExchangeId {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "polymarket" => Some(ExchangeId::Polymarket),
-            "opinion" => Some(ExchangeId::Opinion),
-            "limitless" => Some(ExchangeId::Limitless),
-            _ => None,
+            "polymarket" => Ok(ExchangeId::Polymarket),
+            "opinion" => Ok(ExchangeId::Opinion),
+            "limitless" => Ok(ExchangeId::Limitless),
+            _ => Err(()),
         }
     }
+}
 
+impl ExchangeId {
     pub fn env_prefix(&self) -> &'static str {
         match self {
             ExchangeId::Polymarket => "POLYMARKET",
@@ -119,18 +126,18 @@ mod tests {
     fn test_exchange_id_from_str() {
         assert_eq!(
             ExchangeId::from_str("polymarket"),
-            Some(ExchangeId::Polymarket)
+            Ok(ExchangeId::Polymarket)
         );
         assert_eq!(
             ExchangeId::from_str("POLYMARKET"),
-            Some(ExchangeId::Polymarket)
+            Ok(ExchangeId::Polymarket)
         );
-        assert_eq!(ExchangeId::from_str("opinion"), Some(ExchangeId::Opinion));
+        assert_eq!(ExchangeId::from_str("opinion"), Ok(ExchangeId::Opinion));
         assert_eq!(
             ExchangeId::from_str("limitless"),
-            Some(ExchangeId::Limitless)
+            Ok(ExchangeId::Limitless)
         );
-        assert_eq!(ExchangeId::from_str("unknown"), None);
+        assert_eq!(ExchangeId::from_str("unknown"), Err(()));
     }
 
     #[test]

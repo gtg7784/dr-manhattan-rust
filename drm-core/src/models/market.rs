@@ -25,7 +25,7 @@ impl Market {
     }
 
     pub fn is_open(&self) -> bool {
-        if let Some(ref metadata) = self.metadata.as_object() {
+        if let Some(metadata) = self.metadata.as_object() {
             if let Some(closed) = metadata.get("closed").and_then(|v| v.as_bool()) {
                 return !closed;
             }

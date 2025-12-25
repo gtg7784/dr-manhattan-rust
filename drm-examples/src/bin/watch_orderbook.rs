@@ -33,13 +33,13 @@ async fn main() -> Result<()> {
         let orderbook = match result {
             Ok(ob) => ob,
             Err(e) => {
-                eprintln!("Error: {}", e);
+                eprintln!("Error: {e}");
                 continue;
             }
         };
 
         count += 1;
-        println!("━━━ Update #{} ━━━", count);
+        println!("━━━ Update #{count} ━━━");
         println!("Market: {}", orderbook.market_id);
         println!("Asset:  {}...", &orderbook.asset_id[..20.min(orderbook.asset_id.len())]);
 
