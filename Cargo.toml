@@ -10,7 +10,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/gtg7784/dr-manhattan-rust"
@@ -50,6 +50,6 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # Internal crates
-drm-core = { version = "0.1.2", path = "drm-core" }
-drm-exchange-polymarket = { version = "0.1.2", path = "drm-exchange-polymarket" }
-drm-exchange-kalshi = { version = "0.1.2", path = "drm-exchange-kalshi" }
+drm-core = { version = "0.1.3", path = "drm-core" }
+drm-exchange-polymarket = { version = "0.1.3", path = "drm-exchange-polymarket" }
+drm-exchange-kalshi = { version = "0.1.3", path = "drm-exchange-kalshi" }

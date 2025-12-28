@@ -1,7 +1,7 @@
 use crate::error::KalshiError;
 use base64::{engine::general_purpose::STANDARD, Engine};
 use pkcs8::DecodePrivateKey;
-use rsa::pkcs1v15::SigningKey;
+use rsa::pss::SigningKey;
 use rsa::signature::{SignatureEncoding, Signer};
 use rsa::RsaPrivateKey;
 use sha2::Sha256;
@@ -22,13 +22,19 @@ impl KalshiAuth {
         let private_key = RsaPrivateKey::from_pkcs8_pem(pem)
             .map_err(|e| KalshiError::Rsa(format!("failed to parse RSA private key: {e}")))?;
 
-        let signing_key = SigningKey::<Sha256>::new_unprefixed(private_key);
+        let signing_key = SigningKey::<Sha256>::new(private_key);
 
         Ok(Self { signing_key })
     }
 
     pub fn sign(&self, timestamp_ms: i64, method: &str, path: &str) -> String {
-        let message = format!("{}{}{}", timestamp_ms, method.to_uppercase(), path);
+        let path_without_query = path.split('?').next().unwrap_or(path);
+        let message = format!(
+            "{}{}{}",
+            timestamp_ms,
+            method.to_uppercase(),
+            path_without_query
+        );
         let signature = self.signing_key.sign(message.as_bytes());
         STANDARD.encode(signature.to_bytes())
     }
