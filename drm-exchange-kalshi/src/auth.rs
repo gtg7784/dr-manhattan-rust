@@ -29,7 +29,12 @@ impl KalshiAuth {
 
     pub fn sign(&self, timestamp_ms: i64, method: &str, path: &str) -> String {
         let path_without_query = path.split('?').next().unwrap_or(path);
-        let message = format!("{}{}{}", timestamp_ms, method.to_uppercase(), path_without_query);
+        let message = format!(
+            "{}{}{}",
+            timestamp_ms,
+            method.to_uppercase(),
+            path_without_query
+        );
         let signature = self.signing_key.sign(message.as_bytes());
         STANDARD.encode(signature.to_bytes())
     }
