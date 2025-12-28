@@ -11,7 +11,7 @@
 This crate provides a complete Kalshi integration including:
 
 - **REST API**: Fetch markets, create/cancel orders, manage positions
-- **Authentication**: RSA-PKCS1v15 signature-based authentication
+- **Authentication**: RSA-PSS signature-based authentication
 
 ## Installation
 
@@ -43,7 +43,7 @@ async fn main() -> anyhow::Result<()> {
 
 ## Authentication
 
-Kalshi uses RSA-PKCS1v15 signatures for authentication. You need:
+Kalshi uses RSA-PSS signatures for authentication. You need:
 1. An API key ID (from your Kalshi account)
 2. An RSA private key (PEM format)
 
