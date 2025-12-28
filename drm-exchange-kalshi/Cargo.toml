@@ -20,8 +20,8 @@ thiserror = { workspace = true }
 chrono = { workspace = true }
 tracing = { workspace = true }
 
-# RSA-PSS signing
-rsa = "0.9"
+# RSA-PSS signing (getrandom enables Signer trait with OsRng)
+rsa = { version = "0.9", features = ["getrandom"] }
 sha2 = "0.10"
 base64 = "0.22"
 pkcs8 = { version = "0.10", features = ["pem"] }
