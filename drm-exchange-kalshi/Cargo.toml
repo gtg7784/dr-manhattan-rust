@@ -28,3 +28,5 @@ pkcs8 = { version = "0.10", features = ["pem"] }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+rand = "0.8"
+wiremock = "0.6"
