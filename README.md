@@ -68,11 +68,16 @@ async fn main() -> anyhow::Result<()> {
 ## Running Examples
 
 ```bash
-# List markets from Polymarket
-cargo run --bin list-markets
+# List markets from any exchange
+cargo run -p drm-examples --bin list-markets -- <exchange> -l <limit>
 
-# Watch orderbook updates
-cargo run --bin watch-orderbook
+# Examples:
+cargo run -p drm-examples --bin list-markets -- polymarket -l 5
+cargo run -p drm-examples --bin list-markets -- kalshi -l 10
+PREDICTFUN_API_KEY=<key> cargo run -p drm-examples --bin list-markets -- predictfun -l 5
+
+# Watch orderbook updates (Polymarket)
+cargo run -p drm-examples --bin watch-orderbook
 ```
 
 ## Development
