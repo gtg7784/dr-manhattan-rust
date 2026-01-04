@@ -201,7 +201,9 @@ impl PredictFun {
             .map_err(|e| PredictFunError::Network(e.to_string()))?;
 
         if !msg_response.status().is_success() {
-            return Err(PredictFunError::Auth("failed to get signing message".into()));
+            return Err(PredictFunError::Auth(
+                "failed to get signing message".into(),
+            ));
         }
 
         let msg_data: AuthMessageResponse = msg_response
@@ -313,7 +315,10 @@ impl PredictFun {
 
         let text = response.text().await?;
         if self.config.base.verbose {
-            eprintln!("[DEBUG] Response (first 500 chars): {}", &text[..text.len().min(500)]);
+            eprintln!(
+                "[DEBUG] Response (first 500 chars): {}",
+                &text[..text.len().min(500)]
+            );
         }
 
         serde_json::from_str(&text).map_err(|e| PredictFunError::Api(format!("parse error: {e}")))
@@ -459,10 +464,7 @@ impl PredictFun {
             })
             .unwrap_or_default();
 
-        let status = obj
-            .get("status")
-            .and_then(|v| v.as_str())
-            .unwrap_or("");
+        let status = obj.get("status").and_then(|v| v.as_str()).unwrap_or("");
         let closed = status == "RESOLVED" || status == "PAUSED";
 
         let decimal_precision = obj
@@ -473,12 +475,18 @@ impl PredictFun {
 
         let volume = obj
             .get("volume")
-            .and_then(|v| v.as_f64().or_else(|| v.as_str().and_then(|s| s.parse().ok())))
+            .and_then(|v| {
+                v.as_f64()
+                    .or_else(|| v.as_str().and_then(|s| s.parse().ok()))
+            })
             .unwrap_or(0.0);
 
         let liquidity = obj
             .get("liquidity")
-            .and_then(|v| v.as_f64().or_else(|| v.as_str().and_then(|s| s.parse().ok())))
+            .and_then(|v| {
+                v.as_f64()
+                    .or_else(|| v.as_str().and_then(|s| s.parse().ok()))
+            })
             .unwrap_or(0.0);
 
         let is_neg_risk = obj
@@ -497,10 +505,7 @@ impl PredictFun {
             .unwrap_or("")
             .to_string();
 
-        let fee_rate_bps = obj
-            .get("feeRateBps")
-            .and_then(|v| v.as_u64())
-            .unwrap_or(0);
+        let fee_rate_bps = obj.get("feeRateBps").and_then(|v| v.as_u64()).unwrap_or(0);
 
         let mut metadata = data.clone();
         if let Some(meta_obj) = metadata.as_object_mut() {
@@ -513,7 +518,10 @@ impl PredictFun {
             meta_obj.insert("conditionId".to_string(), serde_json::json!(condition_id));
             meta_obj.insert("feeRateBps".to_string(), serde_json::json!(fee_rate_bps));
             meta_obj.insert("closed".to_string(), serde_json::json!(closed));
-            meta_obj.insert("minimum_tick_size".to_string(), serde_json::json!(tick_size));
+            meta_obj.insert(
+                "minimum_tick_size".to_string(),
+                serde_json::json!(tick_size),
+            );
         }
 
         Some(Market {
@@ -545,7 +553,11 @@ impl PredictFun {
 
         let market_id = obj
             .and_then(|o| o.get("marketId"))
-            .and_then(|v| v.as_i64().map(|n| n.to_string()).or_else(|| v.as_str().map(String::from)))
+            .and_then(|v| {
+                v.as_i64()
+                    .map(|n| n.to_string())
+                    .or_else(|| v.as_str().map(String::from))
+            })
             .unwrap_or_default();
 
         let side_val = obj.and_then(|o| o.get("side"));
@@ -590,12 +602,18 @@ impl PredictFun {
 
         let size = obj
             .and_then(|o| o.get("amount"))
-            .and_then(|v| v.as_f64().or_else(|| v.as_str().and_then(|s| s.parse().ok())))
+            .and_then(|v| {
+                v.as_f64()
+                    .or_else(|| v.as_str().and_then(|s| s.parse().ok()))
+            })
             .unwrap_or(0.0);
 
         let filled = obj
             .and_then(|o| o.get("amountFilled"))
-            .and_then(|v| v.as_f64().or_else(|| v.as_str().and_then(|s| s.parse().ok())))
+            .and_then(|v| {
+                v.as_f64()
+                    .or_else(|| v.as_str().and_then(|s| s.parse().ok()))
+            })
             .unwrap_or(0.0);
 
         let created_at = obj
@@ -642,7 +660,11 @@ impl PredictFun {
 
         let market_id = obj
             .and_then(|o| o.get("marketId"))
-            .and_then(|v| v.as_i64().map(|n| n.to_string()).or_else(|| v.as_str().map(String::from)))
+            .and_then(|v| {
+                v.as_i64()
+                    .map(|n| n.to_string())
+                    .or_else(|| v.as_str().map(String::from))
+            })
             .unwrap_or_default();
 
         let outcome = obj
@@ -653,17 +675,26 @@ impl PredictFun {
 
         let size = obj
             .and_then(|o| o.get("size"))
-            .and_then(|v| v.as_f64().or_else(|| v.as_str().and_then(|s| s.parse().ok())))
+            .and_then(|v| {
+                v.as_f64()
+                    .or_else(|| v.as_str().and_then(|s| s.parse().ok()))
+            })
             .unwrap_or(0.0);
 
         let average_price = obj
             .and_then(|o| o.get("avgPrice"))
-            .and_then(|v| v.as_f64().or_else(|| v.as_str().and_then(|s| s.parse().ok())))
+            .and_then(|v| {
+                v.as_f64()
+                    .or_else(|| v.as_str().and_then(|s| s.parse().ok()))
+            })
             .unwrap_or(0.0);
 
         let current_price = obj
             .and_then(|o| o.get("currentPrice"))
-            .and_then(|v| v.as_f64().or_else(|| v.as_str().and_then(|s| s.parse().ok())))
+            .and_then(|v| {
+                v.as_f64()
+                    .or_else(|| v.as_str().and_then(|s| s.parse().ok()))
+            })
             .unwrap_or(0.0);
 
         Position {
@@ -807,8 +838,7 @@ impl PredictFun {
             "signatureType": 0,
         });
 
-        let signature =
-            self.sign_order_eip712(&order, exchange_address, wallet, address)?;
+        let signature = self.sign_order_eip712(&order, exchange_address, wallet, address)?;
 
         let mut signed_order = order;
         signed_order["signature"] = serde_json::json!(signature);
