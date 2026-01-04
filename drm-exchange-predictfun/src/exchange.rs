@@ -53,6 +53,7 @@ struct AuthRequest {
 #[derive(Debug, Clone, serde::Deserialize)]
 struct MarketsResponse {
     data: Option<Vec<serde_json::Value>>,
+    cursor: Option<String>,
 }
 
 #[derive(Debug, Clone, serde::Deserialize)]
@@ -310,10 +311,12 @@ impl PredictFun {
             return Err(PredictFunError::Api(text));
         }
 
-        response
-            .json()
-            .await
-            .map_err(|e| PredictFunError::Api(e.to_string()))
+        let text = response.text().await?;
+        if self.config.base.verbose {
+            eprintln!("[DEBUG] Response (first 500 chars): {}", &text[..text.len().min(500)]);
+        }
+
+        serde_json::from_str(&text).map_err(|e| PredictFunError::Api(format!("parse error: {e}")))
     }
 
     async fn post<T: serde::de::DeserializeOwned, B: serde::Serialize>(
@@ -408,9 +411,20 @@ impl PredictFun {
     fn parse_market(&self, data: serde_json::Value) -> Option<Market> {
         let obj = data.as_object()?;
 
-        let id = obj
-            .get("id")
-            .and_then(|v| v.as_i64().map(|n| n.to_string()).or_else(|| v.as_str().map(String::from)))?;
+        let id = match obj.get("id") {
+            Some(v) => {
+                if let Some(n) = v.as_i64() {
+                    n.to_string()
+                } else if let Some(s) = v.as_str() {
+                    s.to_string()
+                } else if let Some(n) = v.as_u64() {
+                    n.to_string()
+                } else {
+                    return None;
+                }
+            }
+            None => return None,
+        };
 
         let question = obj
             .get("question")
@@ -923,37 +937,57 @@ impl Exchange for PredictFun {
         params: Option<FetchMarketsParams>,
     ) -> Result<Vec<Market>, DrmError> {
         let params = params.unwrap_or_default();
-        let mut query = String::new();
+        let target_limit = params.limit.unwrap_or(100);
+        let page_size = 100;
+        let max_pages = 5;
 
-        if let Some(limit) = params.limit {
-            query.push_str(&format!("?first={limit}"));
+        let mut markets: Vec<Market> = Vec::new();
+        let mut cursor: Option<String> = None;
+
+        for _ in 0..max_pages {
+            let mut query = format!("?first={}", page_size);
+            if let Some(ref c) = cursor {
+                query.push_str(&format!("&after={}", c));
+            }
+
+            let endpoint = format!("/v1/markets{query}");
+            let response: MarketsResponse = self
+                .get(&endpoint, false)
+                .await
+                .map_err(|e| DrmError::Exchange(e.into()))?;
+
+            let markets_data = response.data.unwrap_or_default();
+            if markets_data.is_empty() {
+                break;
+            }
+
+            let mut page_markets: Vec<Market> = markets_data
+                .into_iter()
+                .filter_map(|v| self.parse_market(v))
+                .collect();
+
+            if params.active_only {
+                page_markets.retain(|m| {
+                    !m.metadata
+                        .get("closed")
+                        .and_then(|v| v.as_bool())
+                        .unwrap_or(false)
+                });
+            }
+
+            markets.extend(page_markets);
+
+            if markets.len() >= target_limit {
+                break;
+            }
+
+            cursor = response.cursor;
+            if cursor.is_none() {
+                break;
+            }
         }
 
-        let endpoint = format!("/v1/markets{query}");
-        let response: MarketsResponse = self
-            .get(&endpoint, false)
-            .await
-            .map_err(|e| DrmError::Exchange(e.into()))?;
-
-        let markets_data = response.data.unwrap_or_default();
-        let mut markets: Vec<Market> = markets_data
-            .into_iter()
-            .filter_map(|v| self.parse_market(v))
-            .collect();
-
-        if params.active_only {
-            markets.retain(|m| {
-                !m.metadata
-                    .get("closed")
-                    .and_then(|v| v.as_bool())
-                    .unwrap_or(false)
-            });
-        }
-
-        if let Some(limit) = params.limit {
-            markets.truncate(limit);
-        }
-
+        markets.truncate(target_limit);
         Ok(markets)
     }
 
