@@ -6,11 +6,12 @@ members = [
     "drm-exchange-opinion",
     "drm-exchange-limitless",
     "drm-exchange-kalshi",
+    "drm-exchange-predictfun",
     "drm-examples",
 ]
 
 [workspace.package]
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/gtg7784/dr-manhattan-rust"
@@ -50,6 +51,9 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # Internal crates
-drm-core = { version = "0.1.3", path = "drm-core" }
-drm-exchange-polymarket = { version = "0.1.3", path = "drm-exchange-polymarket" }
-drm-exchange-kalshi = { version = "0.1.3", path = "drm-exchange-kalshi" }
+drm-core = { version = "0.1.4", path = "drm-core" }
+drm-exchange-polymarket = { version = "0.1.4", path = "drm-exchange-polymarket" }
+drm-exchange-limitless = { version = "0.1.4", path = "drm-exchange-limitless" }
+drm-exchange-opinion = { version = "0.1.4", path = "drm-exchange-opinion" }
+drm-exchange-kalshi = { version = "0.1.4", path = "drm-exchange-kalshi" }
+drm-exchange-predictfun = { version = "0.1.4", path = "drm-exchange-predictfun" }
