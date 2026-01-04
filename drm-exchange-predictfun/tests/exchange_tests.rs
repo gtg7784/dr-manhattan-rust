@@ -108,9 +108,10 @@ async fn test_fetch_markets_parses_response() {
 async fn test_fetch_markets_with_limit() {
     // given
     let mock_server = MockServer::start().await;
+    // Pagination always uses first=100, then truncates results to limit
     Mock::given(method("GET"))
         .and(path("/v1/markets"))
-        .and(query_param("first", "5"))
+        .and(query_param("first", "100"))
         .respond_with(ResponseTemplate::new(200).set_body_json(sample_markets_response()))
         .mount(&mock_server)
         .await;
@@ -122,13 +123,13 @@ async fn test_fetch_markets_with_limit() {
 
     // when
     let params = FetchMarketsParams {
-        limit: Some(5),
+        limit: Some(1),
         active_only: false,
     };
     let markets = exchange.fetch_markets(Some(params)).await.unwrap();
 
-    // then
-    assert_eq!(markets.len(), 2);
+    // then - limit=1 should truncate to 1 market
+    assert_eq!(markets.len(), 1);
 }
 
 #[tokio::test]
