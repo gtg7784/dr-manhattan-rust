@@ -9,11 +9,16 @@ repository.workspace = true
 [dependencies]
 drm-core = { workspace = true }
 drm-exchange-polymarket = { workspace = true }
+drm-exchange-limitless = { workspace = true }
+drm-exchange-opinion = { workspace = true }
+drm-exchange-kalshi = { workspace = true }
+drm-exchange-predictfun = { workspace = true }
 tokio = { workspace = true }
 futures = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 anyhow = { workspace = true }
+clap = { version = "4", features = ["derive"] }
 
 [[bin]]
 name = "list-markets"

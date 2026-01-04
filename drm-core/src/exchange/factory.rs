@@ -8,6 +8,8 @@ pub enum ExchangeId {
     Polymarket,
     Opinion,
     Limitless,
+    Kalshi,
+    PredictFun,
 }
 
 impl ExchangeId {
@@ -16,6 +18,8 @@ impl ExchangeId {
             ExchangeId::Polymarket => "polymarket",
             ExchangeId::Opinion => "opinion",
             ExchangeId::Limitless => "limitless",
+            ExchangeId::Kalshi => "kalshi",
+            ExchangeId::PredictFun => "predictfun",
         }
     }
 }
@@ -28,6 +32,8 @@ impl FromStr for ExchangeId {
             "polymarket" => Ok(ExchangeId::Polymarket),
             "opinion" => Ok(ExchangeId::Opinion),
             "limitless" => Ok(ExchangeId::Limitless),
+            "kalshi" => Ok(ExchangeId::Kalshi),
+            "predictfun" => Ok(ExchangeId::PredictFun),
             _ => Err(()),
         }
     }
@@ -39,6 +45,8 @@ impl ExchangeId {
             ExchangeId::Polymarket => "POLYMARKET",
             ExchangeId::Opinion => "OPINION",
             ExchangeId::Limitless => "LIMITLESS",
+            ExchangeId::Kalshi => "KALSHI",
+            ExchangeId::PredictFun => "PREDICTFUN",
         }
     }
 
@@ -51,6 +59,8 @@ impl ExchangeId {
                 "OPINION_MULTI_SIG_ADDR",
             ],
             ExchangeId::Limitless => vec!["LIMITLESS_PRIVATE_KEY"],
+            ExchangeId::Kalshi => vec!["KALSHI_API_KEY_ID", "KALSHI_PRIVATE_KEY_PATH"],
+            ExchangeId::PredictFun => vec!["PREDICTFUN_API_KEY", "PREDICTFUN_PRIVATE_KEY"],
         }
     }
 }
@@ -60,11 +70,13 @@ pub fn list_exchanges() -> Vec<ExchangeId> {
         ExchangeId::Polymarket,
         ExchangeId::Opinion,
         ExchangeId::Limitless,
+        ExchangeId::Kalshi,
+        ExchangeId::PredictFun,
     ]
 }
 
 pub fn list_exchange_names() -> Vec<&'static str> {
-    vec!["polymarket", "opinion", "limitless"]
+    vec!["polymarket", "opinion", "limitless", "kalshi", "predictfun"]
 }
 
 pub fn validate_env_config(exchange: ExchangeId) -> Result<(), DrmError> {
@@ -134,13 +146,18 @@ mod tests {
         );
         assert_eq!(ExchangeId::from_str("opinion"), Ok(ExchangeId::Opinion));
         assert_eq!(ExchangeId::from_str("limitless"), Ok(ExchangeId::Limitless));
+        assert_eq!(ExchangeId::from_str("kalshi"), Ok(ExchangeId::Kalshi));
+        assert_eq!(
+            ExchangeId::from_str("predictfun"),
+            Ok(ExchangeId::PredictFun)
+        );
         assert_eq!(ExchangeId::from_str("unknown"), Err(()));
     }
 
     #[test]
     fn test_list_exchanges() {
         let exchanges = list_exchanges();
-        assert_eq!(exchanges.len(), 3);
+        assert_eq!(exchanges.len(), 5);
     }
 
     #[test]

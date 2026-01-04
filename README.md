@@ -30,6 +30,7 @@ dr-manhattan-rust/
 ├── drm-exchange-limitless/      # Limitless implementation
 ├── drm-exchange-opinion/        # Opinion implementation
 ├── drm-exchange-kalshi/         # Kalshi implementation
+├── drm-exchange-predictfun/     # Predict.fun implementation
 ├── drm-examples/                # Example binaries
 └── Cargo.toml                   # Workspace configuration
 ```
@@ -62,6 +63,7 @@ async fn main() -> anyhow::Result<()> {
 | Limitless | ✅ Complete | ✅ All endpoints | ✅ Orderbook |
 | Opinion | ✅ Complete | ✅ All endpoints | - |
 | Kalshi | ✅ Complete | ✅ All endpoints | - |
+| Predict.fun | ✅ Complete | ✅ All endpoints | - |
 
 ## Running Examples
 
@@ -155,6 +157,28 @@ let exchange = Kalshi::new(config)?;
 let config = KalshiConfig::new("your-api-key-id", "")
     .with_private_key_pem("-----BEGIN PRIVATE KEY-----\n...");
 let exchange = Kalshi::new(config)?;
+```
+
+### Predict.fun
+
+```rust
+use drm_exchange_predictfun::{PredictFun, PredictFunConfig};
+
+// Public API
+let exchange = PredictFun::with_default_config()?;
+
+// Authenticated (for trading)
+let config = PredictFunConfig::new()
+    .with_api_key("your-api-key")
+    .with_private_key("0x...");
+let exchange = PredictFun::new(config)?;
+exchange.authenticate().await?;
+
+// Testnet
+let config = PredictFunConfig::testnet()
+    .with_api_key("your-api-key")
+    .with_private_key("0x...");
+let exchange = PredictFun::new(config)?;
 ```
 
 ## API Reference
